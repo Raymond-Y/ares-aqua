@@ -12,12 +12,20 @@
 #include <bluetooth/mesh/proxy.h>
 #include <random/rand32.h>
 
+#include <device.h>
+#include <devicetree.h>
+#include <data/json.h>
+
+#include <toolchain.h>
+#include <stdarg.h>
+#include <inttypes.h>
+
+#include <init.h>
 #include <zephyr/types.h>
 #include <stddef.h>
 #include <errno.h>
 #include <zephyr.h>
 #include <sys/printk.h>
-#include <drivers/gpio.h>
 #include <drivers/uart.h>
 #include <usb/usb_device.h>
 
@@ -517,13 +525,21 @@ static void bt_ready(int err)
 void main(void)
 {
 	int err;
+	
+
+	if (usb_enable(NULL)) {
+		return;
+	}
 	printk("switch\n");
+	// while (1) {
+	// 	printk("hello\n");
+	// 	k_msleep(1000);
+	// }
 
 	onoff_tid = 0;
 	hsl_tid = 0;
 
 	configureButtons();
-
 	configureLED();
 
 	err = bt_enable(bt_ready);
