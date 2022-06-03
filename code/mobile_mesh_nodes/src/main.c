@@ -338,11 +338,36 @@ static struct bt_mesh_health_srv health_srv = {
 // Composition
 // -----------
 
+#define MAX_NUMBER_BEACONS 12
+
+// TODO: Change data based on RSSI values
+uint16_t beaconRSSI[MAX_NUMBER_BEACONS][2] = {
+	{ 0x0000, 0x0010 }, // iBeacon A
+	{ 0x0001, 0x0020 }, // iBeacon B
+	{ 0x0002, 0x0030 }, // iBeacon C
+	{ 0x0003, 0x0040 }, // iBeacon D
+	{ 0x0004, 0x0050 }, // iBeacon E
+	{ 0x0005, 0x0060 }, // iBeacon F
+	{ 0x0006, 0x0070 }, // iBeacon G
+	{ 0x0007, 0x0080 }, // iBeacon H
+	{ 0x0008, 0x0090 }, // Relay W
+	{ 0x0009, 0x00A0 }, // Relay X
+	{ 0x000A, 0x00B0 }, // Relay Y
+	{ 0x000B, 0x00C0 } // Relay Z
+};
+
+#define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK	BT_MESH_MODEL_OP_2(0x82, 0x40)
+
+
+BT_MESH_MODEL_PUB_DEFINE(data_mobile_to_base, NULL, 2);
+
+
 static struct bt_mesh_model sig_models[] = {
     BT_MESH_MODEL_CFG_SRV,
 	BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
 	BT_MESH_MODEL(BT_MESH_MODEL_ID_GEN_ONOFF_SRV, generic_onoff_op, &generic_onoff_pub, NULL),
 	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_HSL_SRV, light_hsl_op, &light_hsl_pub, NULL),
+	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_CLI, NULL, &data_mobile_to_base, &beaconRSSI[0]),
 };
 
 // node contains elements.note that BT_MESH_MODEL_NONE means "none of this type" ands here means "no vendor models"
@@ -356,6 +381,43 @@ static const struct bt_mesh_comp comp = {
 		.elem = elements,
 		.elem_count = ARRAY_SIZE(elements),
 };
+
+
+// Mobile to Base data model 
+
+static uint8_t test_tid = 0; // TODO: change
+uint8_t current_element_inx = 1;
+
+int sendDataToBase(uint16_t message_type) {
+	int err;
+	struct bt_mesh_model* model = &sig_models[4];
+	if (model->pub->addr == BT_MESH_ADDR_UNASSIGNED) {
+		printk("No publish address associated with the light HSL client model - add one with a configuration app like nRF Mesh\n");
+		return -1;
+	}
+
+	// TODO: insert for loop to send all RSSI values
+
+	struct net_buf_simple* msg = model->pub->msg;
+	bt_mesh_model_msg_init(msg, message_type);
+	net_buf_simple_add_le16(msg, beaconRSSI[current_element_inx][1]); 
+	net_buf_simple_add_le16(msg, beaconRSSI[current_element_inx][0]);
+	net_buf_simple_add_u8(msg, test_tid);
+	test_tid++;
+	printk("publishing RSSI data\n");
+	err = bt_mesh_model_publish(model);
+	if (err) {
+		printk("bt_mesh_model_publish err %d\n", err);
+	} else {
+		current_element_inx++;
+		if (current_element_inx == MAX_NUMBER_BEACONS) {
+			current_element_inx = 0;
+		}
+	}
+	return err;
+}
+
+
 
 // ----------------------------------------------------------------------------------------------------
 // generic onoff status TX message producer
@@ -459,6 +521,8 @@ void main(void)
 {
 	printk("thingy light node v1.1.0\n");
 
+	test_tid = 0;
+
 	configure_thingy_led_controller();
 
     indicate_on();
@@ -475,5 +539,13 @@ void main(void)
 		printk("bt_enable failed with err %d", err);
 	}
 
-
+	while (1) {
+		// read RSSI data
+		k_msleep(500);
+		if (bt_mesh_is_provisioned()) {
+			if (sendDataToBase(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK)) {
+				printk("unable to send RSSI data\n");
+			}
+		}
+	}
 }

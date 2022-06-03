@@ -199,6 +199,36 @@ static const struct bt_mesh_model_op gen_onoff_cli_op[] = {
 		BT_MESH_MODEL_OP_END,
 };
 
+// BEACON data receive (MOBILE TO BASE)
+
+#define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK	BT_MESH_MODEL_OP_2(0x82, 0x40)
+
+static void get_data_from_mobile(struct bt_mesh_model* model, struct bt_mesh_msg_ctx* ctx, struct net_buf_simple* buf) {
+	
+	// reads data backwards (value then node)
+	// {node, value}
+	uint16_t msg_rssi_value = net_buf_simple_pull_le16(buf);
+	uint16_t msg_rssi_node = net_buf_simple_pull_le16(buf);
+	
+	printk("\n node: %d: %d\n", msg_rssi_node, msg_rssi_value);
+	if (model->pub->addr != BT_MESH_ADDR_UNASSIGNED) {
+        // if we had implemented light HSL status messages, we'd send one here
+        printk("A status message should be sent here - not implemented\n");
+    }
+}
+
+static void get_data_from_mobile_unack(struct bt_mesh_model *model,struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf) {
+	printk("get_data_from_mobile_unack\n");
+	get_data_from_mobile(model, ctx, buf);
+}
+
+static const struct bt_mesh_model_op rssi_data_from_mobile_op[] = {
+	{BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK, 5, get_data_from_mobile_unack},
+	BT_MESH_MODEL_OP_END,
+};
+
+BT_MESH_MODEL_PUB_DEFINE(rssi_data_from_mobile_pub, NULL, 2 + 4);
+
 // -------------------------------------------------------------------------------------------------------
 // Light HSL Client Model
 // ----------------------
@@ -251,6 +281,7 @@ static struct bt_mesh_model sig_models[] = {
 				BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
 				BT_MESH_MODEL(BT_MESH_MODEL_ID_GEN_ONOFF_CLI, gen_onoff_cli_op, &gen_onoff_cli, &onoff[0]),
 				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_HSL_CLI, NULL, &light_hsl_cli, &hsl[0]),
+				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_SRV, rssi_data_from_mobile_op, &rssi_data_from_mobile_pub, NULL),
 };
 
 // node contains elements. Note that BT_MESH_MODEL_NONE means "none of this type" and here means "no vendor models"
@@ -541,10 +572,9 @@ void main(void)
 
 	configureButtons();
 	configureLED();
-
+	
 	err = bt_enable(bt_ready);
-	if (err)
-	{
+	if (err) {
 			printk("bt_enable failed with err %d\n", err);
 	}
 }
