@@ -209,11 +209,30 @@ static void get_data_from_mobile(struct bt_mesh_model* model, struct bt_mesh_msg
 	// {node, value}
 	uint16_t msg_rssi_value = net_buf_simple_pull_le16(buf);
 	uint16_t msg_rssi_node = net_buf_simple_pull_le16(buf);
+	if (msg_rssi_node == 0x0000) {
+		printk("4011-A: %d\n", (int8_t) msg_rssi_value);
+	} else if (msg_rssi_node == 0x0001) {
+		printk("4011-B: %d\n", (int8_t) msg_rssi_value);
+	} else if (msg_rssi_node == 0x0002) {
+		printk("4011-D: %d\n", (int8_t) msg_rssi_value);
+	} else if (msg_rssi_node == 0x0003) {
+		printk("4011-E: %d\n", (int8_t) msg_rssi_value);
+	} else if (msg_rssi_node == 0x0004) {
+		printk("4011-F: %d\n", (int8_t) msg_rssi_value);
+	} else if (msg_rssi_node == 0x0005) {
+		printk("4011-G: %d\n", (int8_t) msg_rssi_value);
+	} else if (msg_rssi_node == 0x0006) {
+		printk("4011-H: %d\n", (int8_t) msg_rssi_value);
+	} else if (msg_rssi_node == 0x0007) {
+		printk("4011-I: %d\n", (int8_t) msg_rssi_value);
+	} else if (msg_rssi_node == 0x0008) {
+		printk("4011-L: %d\n", (int8_t) msg_rssi_value);
+	}
 	
-	printk("\n node: %d: %d\n", msg_rssi_node, msg_rssi_value);
+	// printk("\n node: %d: %d\n", msg_rssi_node, msg_rssi_value);
 	if (model->pub->addr != BT_MESH_ADDR_UNASSIGNED) {
         // if we had implemented light HSL status messages, we'd send one here
-        printk("A status message should be sent here - not implemented\n");
+        // printk("A status message should be sent here - not implemented\n");
     }
 }
 

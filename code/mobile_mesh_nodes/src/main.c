@@ -9,10 +9,14 @@
 
 #include <stdlib.h>
 #include <bluetooth/bluetooth.h>
+#include <bluetooth/hci.h>
 #include <settings/settings.h>
 #include <drivers/gpio.h>
 #include <bluetooth/mesh.h>
 #include <random/rand32.h>
+
+#define BLE_MAX_NAME_LEN 	50
+#define NUM_BEACONS 		13 // 9 iBeacons + 4 mesh relay beacons (todo)
 
 // GPIO for the Thingy LED controller
 const struct device *led_ctrlr;
@@ -39,6 +43,26 @@ uint8_t reply_app_idx;
 
 // device UUID
 static uint8_t dev_uuid[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00 };
+
+// Static node GAP names according to index
+const char *nodeNames[] = {
+    "4011-A",
+    "4011-B",
+    // "4011-C",
+    "4011-D",
+    "4011-E",
+    "4011-F",
+    "4011-G",
+    "4011-H",
+    "4011-I", // weak signal
+    // "4011-J",
+    // "4011-K",
+    "4011-L", // weak signal
+    "Zak_Node_AU", //TODO: change static node names
+    "Zak_Node_BU",
+    "Zak_Node_CU",
+    "Zak_Node_DU"
+};
 
 void gen_uuid() {
     uint32_t rnd1 = sys_rand32_get();
@@ -338,18 +362,20 @@ static struct bt_mesh_health_srv health_srv = {
 // Composition
 // -----------
 
-#define MAX_NUMBER_BEACONS 12
+// #define MAX_NUMBER_BEACONS 12
 
 // TODO: Change data based on RSSI values
-uint16_t beaconRSSI[MAX_NUMBER_BEACONS][2] = {
+uint16_t beaconRSSI[NUM_BEACONS][2] = {
 	{ 0x0000, 0x0010 }, // iBeacon A
 	{ 0x0001, 0x0020 }, // iBeacon B
-	{ 0x0002, 0x0030 }, // iBeacon C
+	// { 0x0002, 0x0030 }, // iBeacon C
 	{ 0x0003, 0x0040 }, // iBeacon D
 	{ 0x0004, 0x0050 }, // iBeacon E
 	{ 0x0005, 0x0060 }, // iBeacon F
 	{ 0x0006, 0x0070 }, // iBeacon G
 	{ 0x0007, 0x0080 }, // iBeacon H
+	{ 0x0008, 0x0090 }, // iBeacon I
+	{ 0x0009, 0x00A0 }, // iBeacon L
 	{ 0x0008, 0x0090 }, // Relay W
 	{ 0x0009, 0x00A0 }, // Relay X
 	{ 0x000A, 0x00B0 }, // Relay Y
@@ -410,7 +436,7 @@ int sendDataToBase(uint16_t message_type) {
 		printk("bt_mesh_model_publish err %d\n", err);
 	} else {
 		current_element_inx++;
-		if (current_element_inx == MAX_NUMBER_BEACONS) {
+		if (current_element_inx == NUM_BEACONS) {
 			current_element_inx = 0;
 		}
 	}
@@ -496,6 +522,7 @@ static void bt_ready(int err)
     	printk("Node has not been provisioned - beaconing\n");
 		bt_mesh_prov_enable(BT_MESH_PROV_ADV | BT_MESH_PROV_GATT);
 	} else {
+		
     	printk("Node has already been provisioned\n");
 	    printk("Node unicast address: 0x%04x\n",elements[0].addr);
 	}
@@ -515,6 +542,114 @@ void indicate_on() {
 	thingy_led_on(r, g, b);
     k_sleep(K_MSEC(5000));
 	thingy_led_off();	
+}
+
+
+struct NodeData
+{
+    char name[BLE_MAX_NAME_LEN];
+    int8_t rssi;
+};
+
+static struct NodeData nodeData[NUM_BEACONS];
+
+
+// Semaphores to signal that advertisement was received from node at that index
+static struct k_sem scannedSems[NUM_BEACONS];
+
+// Semaphore to signal that a scan has been completed
+static struct k_sem scanDoneSem;
+
+/**
+ * @brief Initialise all semaphores used in BLE advertisement scanning
+ */
+static void scanned_sem_init(void)
+{
+    k_sem_init(&scanDoneSem, 0, 1);
+
+    for (int i = 0; i < NUM_BEACONS; ++i)
+    {
+
+        k_sem_init(&scannedSems[i], 0, 1);
+    }
+}
+
+/**
+ * @brief Callback function to extract GAP name from BLE
+ *          advertisements
+ * 
+ * @param data : Data to parse
+ * @param user_data : Container to save parsed data to
+ * @return true : If parsing should continue
+ * @return false : If parsing should stop
+ */
+static bool parse_advertising_data(struct bt_data *data, void *user_data)
+{
+    struct NodeData *parsedData = user_data;
+
+    // Check if the data is the advertiser's name
+    if (data->type == BT_DATA_NAME_COMPLETE)
+    {
+
+        // If the name length is valid, save it and stop parsing
+        if (data->data_len < BLE_MAX_NAME_LEN)
+        {
+
+            memcpy(parsedData->name, data->data, data->data_len);
+            parsedData->name[data->data_len] = '\0';
+
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * @brief Callback for when an advertisement has been found
+ * 
+ * @param addr : BLE address of the advertiser
+ * @param rssi : Received signal strength indicator of the advertisement
+ * @param advType : Type of advertisement
+ * @param ad : The scanned advertisement
+ */
+static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t advType, struct net_buf_simple *ad)
+{
+    struct NodeData adData = {0};
+ 
+	bt_data_parse(ad, parse_advertising_data, &adData);
+
+    for (int i = 0; i < NUM_BEACONS; ++i)
+    {
+
+        // See if a valid node; if so, save data
+        if (strcmp(adData.name, nodeNames[i]) == 0)
+        {
+            nodeData[i].rssi = rssi;
+			if (strcmp(adData.name, "4011-A") == 0) {
+				beaconRSSI[0][1] = (uint16_t) rssi;
+			} else if (strcmp(adData.name, "4011-B") == 0) {
+				beaconRSSI[1][1] = (uint16_t) rssi;
+			} else if (strcmp(adData.name, "4011-D") == 0) {
+				beaconRSSI[2][1] = (uint16_t) rssi;
+			} else if (strcmp(adData.name, "4011-E") == 0) {
+				beaconRSSI[3][1] = (uint16_t) rssi;
+			} else if (strcmp(adData.name, "4011-F") == 0) {
+				beaconRSSI[4][1] = (uint16_t) rssi;
+			} else if (strcmp(adData.name, "4011-G") == 0) {
+				beaconRSSI[5][1] = (uint16_t) rssi;
+			} else if (strcmp(adData.name, "4011-H") == 0) {
+				beaconRSSI[6][1] = (uint16_t) rssi;
+			} else if (strcmp(adData.name, "4011-I") == 0) {
+				beaconRSSI[7][1] = (uint16_t) rssi;
+			} else if (strcmp(adData.name, "4011-L") == 0) {
+				beaconRSSI[8][1] = (uint16_t) rssi;
+			}
+			printk("name: %s   rssi: %d\n", adData.name, (uint16_t) rssi);      
+
+            k_sem_give(&scannedSems[i]);
+        }
+    }
 }
 
 void main(void)
@@ -539,13 +674,41 @@ void main(void)
 		printk("bt_enable failed with err %d", err);
 	}
 
+	struct bt_le_scan_param scanParams = {
+		.type = BT_HCI_LE_SCAN_ACTIVE,
+		.options = BT_LE_SCAN_OPT_NONE,
+		.interval = 0x0040,
+		.window = 0x0040
+	};
+
+
+	scanned_sem_init();
+
+	// err = bt_le_scan_start(&scanParams, scan_cb);
+	// if (err) {
+	// 	printk("starting scanning failed (err %d)\n", err);
+	// }
+
 	while (1) {
 		// read RSSI data
-		k_msleep(500);
+		// k_msleep(500);
 		if (bt_mesh_is_provisioned()) {
-			if (sendDataToBase(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK)) {
-				printk("unable to send RSSI data\n");
+			bt_mesh_suspend();
+			err = bt_le_scan_start(&scanParams, scan_cb);
+			if (err) {
+				printk("starting scanning failed (err %d)\n", err);
 			}
+			k_msleep(500);
+			bt_mesh_resume();
+			for (int i = 0; i < 8; i++) {
+				if (sendDataToBase(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK)) {
+					printk("unable to send RSSI data\n");
+				}
+				k_msleep(50);
+			}
+			
 		}
+		// k_sem_give(&scanDoneSem);
+
 	}
 }
