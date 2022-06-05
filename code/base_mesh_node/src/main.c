@@ -203,12 +203,43 @@ static const struct bt_mesh_model_op gen_onoff_cli_op[] = {
 
 #define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK	BT_MESH_MODEL_OP_2(0x82, 0x40)
 
+static void analyse_received_data(uint16_t* msg_rssi_value, uint16_t* msg_rssi_node) {
+	for (int i = 0; i < 5; i++) {
+		if (msg_rssi_node[i] == 0x0000) {
+			printk("4011-A: %d\n", (int8_t) msg_rssi_value[i]);
+		} else if (msg_rssi_node[i] == 0x0001) {
+			printk("4011-B: %d\n", (int8_t) msg_rssi_value[i]);
+		} else if (msg_rssi_node[i] == 0x0003) {
+			printk("4011-D: %d\n", (int8_t) msg_rssi_value[i]);
+		} else if (msg_rssi_node[i] == 0x0004) {
+			printk("4011-E: %d\n", (int8_t) msg_rssi_value[i]);
+		} else if (msg_rssi_node[i] == 0x0005) {
+			printk("4011-F: %d\n", (int8_t) msg_rssi_value[i]);
+		} else if (msg_rssi_node[i] == 0x0006) {
+			printk("4011-G: %d\n", (int8_t) msg_rssi_value[i]);
+		} else if (msg_rssi_node[i] == 0x0007) {
+			printk("4011-H: %d\n", (int8_t) msg_rssi_value[i]);
+		} else if (msg_rssi_node[i] == 0x0008) {
+			printk("4011-I: %d\n", (int8_t) msg_rssi_value[i]);
+		} else if (msg_rssi_node[i] == 0x0009) {
+			printk("4011-L: %d\n", (int8_t) msg_rssi_value[i]);
+		}
+	}
+}
+
 static void get_data_from_mobile(struct bt_mesh_model* model, struct bt_mesh_msg_ctx* ctx, struct net_buf_simple* buf) {
-	
+	uint16_t msg_rssi_value[5];
+	uint16_t msg_rssi_node[5];
 	// reads data backwards (value then node)
 	// {node, value}
-	uint16_t msg_rssi_value = net_buf_simple_pull_le16(buf);
-	uint16_t msg_rssi_node = net_buf_simple_pull_le16(buf);
+	for (int i = 0; i < 5; i++) {
+		msg_rssi_value[i] = net_buf_simple_pull_le16(buf);
+		msg_rssi_node[i] = net_buf_simple_pull_le16(buf);
+	}
+	analyse_received_data(msg_rssi_value, msg_rssi_node);
+
+	/*
+
 	if (msg_rssi_node == 0x0000) {
 		printk("4011-A: %d\n", (int8_t) msg_rssi_value);
 	} else if (msg_rssi_node == 0x0001) {
@@ -228,6 +259,7 @@ static void get_data_from_mobile(struct bt_mesh_model* model, struct bt_mesh_msg
 	} else if (msg_rssi_node == 0x0008) {
 		printk("4011-L: %d\n", (int8_t) msg_rssi_value);
 	}
+	*/
 	
 	// printk("\n node: %d: %d\n", msg_rssi_node, msg_rssi_value);
 	if (model->pub->addr != BT_MESH_ADDR_UNASSIGNED) {
@@ -242,11 +274,12 @@ static void get_data_from_mobile_unack(struct bt_mesh_model *model,struct bt_mes
 }
 
 static const struct bt_mesh_model_op rssi_data_from_mobile_op[] = {
-	{BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK, 5, get_data_from_mobile_unack},
+	{BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK, 1 + 4*5, get_data_from_mobile_unack},
 	BT_MESH_MODEL_OP_END,
 };
 
-BT_MESH_MODEL_PUB_DEFINE(rssi_data_from_mobile_pub, NULL, 2 + 4);
+//was 2 + 4
+BT_MESH_MODEL_PUB_DEFINE(rssi_data_from_mobile_pub, NULL, 2 + 4*5);
 
 // -------------------------------------------------------------------------------------------------------
 // Light HSL Client Model

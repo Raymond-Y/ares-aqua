@@ -21,6 +21,21 @@
 // GPIO for the Thingy LED controller
 const struct device *led_ctrlr;
 
+struct NodeData
+{
+    char name[BLE_MAX_NAME_LEN];
+    int8_t rssi;
+};
+
+static struct NodeData nodeData[NUM_BEACONS];
+
+
+// Semaphores to signal that advertisement was received from node at that index
+static struct k_sem scannedSems[NUM_BEACONS];
+
+// Semaphore to signal that a scan has been completed
+static struct k_sem scanDoneSem;
+
 #define PORT "GPIO_P0"
 #define LED_R 7
 #define LED_G 5
@@ -384,8 +399,8 @@ uint16_t beaconRSSI[NUM_BEACONS][2] = {
 
 #define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK	BT_MESH_MODEL_OP_2(0x82, 0x40)
 
-
-BT_MESH_MODEL_PUB_DEFINE(data_mobile_to_base, NULL, 2);
+// 22 bytes (5 sets of beaconRSSI data, init msg, tid value)
+BT_MESH_MODEL_PUB_DEFINE(data_mobile_to_base, NULL, 22); // was 2
 
 
 static struct bt_mesh_model sig_models[] = {
@@ -412,34 +427,48 @@ static const struct bt_mesh_comp comp = {
 // Mobile to Base data model 
 
 static uint8_t test_tid = 0; // TODO: change
-uint8_t current_element_inx = 1;
+int tempthing[13];
 
 int sendDataToBase(uint16_t message_type) {
 	int err;
 	struct bt_mesh_model* model = &sig_models[4];
+	printk("send data to base...");
 	if (model->pub->addr == BT_MESH_ADDR_UNASSIGNED) {
 		printk("No publish address associated with the light HSL client model - add one with a configuration app like nRF Mesh\n");
 		return -1;
 	}
 
+	int numMsgsAdded = 0;
 	// TODO: insert for loop to send all RSSI values
 
 	struct net_buf_simple* msg = model->pub->msg;
 	bt_mesh_model_msg_init(msg, message_type);
-	net_buf_simple_add_le16(msg, beaconRSSI[current_element_inx][1]); 
-	net_buf_simple_add_le16(msg, beaconRSSI[current_element_inx][0]);
+	for (int i = 0; i < NUM_BEACONS; i++) {
+		if (tempthing[i] == 1) {
+			net_buf_simple_add_le16(msg, beaconRSSI[i][1]); 
+			net_buf_simple_add_le16(msg, beaconRSSI[i][0]);
+			numMsgsAdded++;
+			// only send a set of 5 rssi/name values;
+			if (numMsgsAdded == 5) {
+				break;
+			}
+		}
+	}
+	// add empty data sets to fill transmit buffer as
+	// base node is expecting a certain amount of data
+	while (numMsgsAdded < 5) {
+		net_buf_simple_add_le16(msg, 0xFFFF); 
+		net_buf_simple_add_le16(msg, 0x0008); 
+		numMsgsAdded++;
+	}
 	net_buf_simple_add_u8(msg, test_tid);
 	test_tid++;
 	printk("publishing RSSI data\n");
 	err = bt_mesh_model_publish(model);
 	if (err) {
 		printk("bt_mesh_model_publish err %d\n", err);
-	} else {
-		current_element_inx++;
-		if (current_element_inx == NUM_BEACONS) {
-			current_element_inx = 0;
-		}
 	}
+	k_sem_give(&scanDoneSem);
 	return err;
 }
 
@@ -544,22 +573,6 @@ void indicate_on() {
 	thingy_led_off();	
 }
 
-
-struct NodeData
-{
-    char name[BLE_MAX_NAME_LEN];
-    int8_t rssi;
-};
-
-static struct NodeData nodeData[NUM_BEACONS];
-
-
-// Semaphores to signal that advertisement was received from node at that index
-static struct k_sem scannedSems[NUM_BEACONS];
-
-// Semaphore to signal that a scan has been completed
-static struct k_sem scanDoneSem;
-
 /**
  * @brief Initialise all semaphores used in BLE advertisement scanning
  */
@@ -605,6 +618,20 @@ static bool parse_advertising_data(struct bt_data *data, void *user_data)
     return true;
 }
 
+static int8_t beaconCount = 0;
+// static uint16_t tempMask = 0x0000;
+
+// #define BIT_SET(num, position) 		num |= 1UL << position
+// #define BIT_CLEAR(num, position) 	num &= ~(1UL << position)
+
+static inline void BIT_SET(uint16_t* num, int pos) {
+	*num |= (1U << pos);
+}
+
+static inline void BIT_CLEAR(uint16_t* num, int pos) {
+	*num &= ~(1U << pos);
+}
+
 /**
  * @brief Callback for when an advertisement has been found
  * 
@@ -619,37 +646,22 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t advType, stru
  
 	bt_data_parse(ad, parse_advertising_data, &adData);
 
-    for (int i = 0; i < NUM_BEACONS; ++i)
+    for (int i = 0; i < NUM_BEACONS; i++)
     {
-
         // See if a valid node; if so, save data
-        if (strcmp(adData.name, nodeNames[i]) == 0)
-        {
-            nodeData[i].rssi = rssi;
-			if (strcmp(adData.name, "4011-A") == 0) {
-				beaconRSSI[0][1] = (uint16_t) rssi;
-			} else if (strcmp(adData.name, "4011-B") == 0) {
-				beaconRSSI[1][1] = (uint16_t) rssi;
-			} else if (strcmp(adData.name, "4011-D") == 0) {
-				beaconRSSI[2][1] = (uint16_t) rssi;
-			} else if (strcmp(adData.name, "4011-E") == 0) {
-				beaconRSSI[3][1] = (uint16_t) rssi;
-			} else if (strcmp(adData.name, "4011-F") == 0) {
-				beaconRSSI[4][1] = (uint16_t) rssi;
-			} else if (strcmp(adData.name, "4011-G") == 0) {
-				beaconRSSI[5][1] = (uint16_t) rssi;
-			} else if (strcmp(adData.name, "4011-H") == 0) {
-				beaconRSSI[6][1] = (uint16_t) rssi;
-			} else if (strcmp(adData.name, "4011-I") == 0) {
-				beaconRSSI[7][1] = (uint16_t) rssi;
-			} else if (strcmp(adData.name, "4011-L") == 0) {
-				beaconRSSI[8][1] = (uint16_t) rssi;
-			}
-			printk("name: %s   rssi: %d\n", adData.name, (uint16_t) rssi);      
-
-            k_sem_give(&scannedSems[i]);
+        if (strcmp(adData.name, nodeNames[i]) == 0) {
+			beaconRSSI[i][1] = (uint16_t) rssi;		
         }
     }
+}
+
+static void reset_beacon_values() {
+	for (int i = 0; i < NUM_BEACONS; i++) {
+		beaconRSSI[i][1] = 0x0000;
+		nodeData[i].rssi = 0x00;
+		tempthing[i] = 1;
+	}
+	beaconCount = 0; // reset count index
 }
 
 void main(void)
@@ -677,12 +689,12 @@ void main(void)
 	struct bt_le_scan_param scanParams = {
 		.type = BT_HCI_LE_SCAN_ACTIVE,
 		.options = BT_LE_SCAN_OPT_NONE,
-		.interval = 0x0040,
-		.window = 0x0040
+		.interval = 0x0050,
+		.window = 0x0050
 	};
 
-
 	scanned_sem_init();
+	k_sem_give(&scanDoneSem);
 
 	// err = bt_le_scan_start(&scanParams, scan_cb);
 	// if (err) {
@@ -693,19 +705,48 @@ void main(void)
 		// read RSSI data
 		// k_msleep(500);
 		if (bt_mesh_is_provisioned()) {
+
+			k_sem_take(&scanDoneSem, K_FOREVER);
+			k_sem_give(&scanDoneSem);
+
 			bt_mesh_suspend();
+			reset_beacon_values();
+			k_msleep(100);
+			
 			err = bt_le_scan_start(&scanParams, scan_cb);
 			if (err) {
 				printk("starting scanning failed (err %d)\n", err);
 			}
-			k_msleep(500);
-			bt_mesh_resume();
-			for (int i = 0; i < 8; i++) {
-				if (sendDataToBase(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK)) {
-					printk("unable to send RSSI data\n");
-				}
-				k_msleep(50);
+
+			k_msleep(200);
+			err = bt_le_scan_stop();
+			if (err) {
+				printk("stop scanning failed (err %d)\n", err);
 			}
+		
+			for (int j = 0; j < NUM_BEACONS; j++) {
+				// beaconRSSI[j][1] = (uint16_t) nodeData[j].rssi;
+				int count = NUM_BEACONS;
+				printk("%s: %d\n", nodeNames[j], beaconRSSI[j][1]);
+				for (int k = 0; k < NUM_BEACONS; k++) {
+					
+					if (beaconRSSI[j][1] < beaconRSSI[k][1]) {
+						count--;
+						if (count <= 8) {
+							tempthing[j] = 0;
+							// BIT_SET(&tempMask, j);
+							break;
+						}
+					}
+				}
+			}
+			bt_mesh_resume();
+			// k_msleep(500);
+			k_sem_take(&scanDoneSem, K_FOREVER);
+			if (sendDataToBase(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK)) {
+				printk("unable to send RSSI data\n");
+			}
+			k_msleep(1500);
 			
 		}
 		// k_sem_give(&scanDoneSem);
