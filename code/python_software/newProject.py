@@ -53,14 +53,16 @@ class BaseProcessing:
         self.rssi_data_samples_nodeK = np.ones(ARRAY_SIZE)
         self.rssi_data_samples_nodeL = np.ones(ARRAY_SIZE)
         self.size_received_beacons = 0
-        self.x0 = 0
-        self.y0 = 0
+        self.x0 = 3
+        self.y0 = 2
         self.mobileNode1x = 0
         self.mobileNode1y = 0
+        self.mobileNode2x = 0
+        self.mobileNode2y = 0
         self.receivedXPositions = np.ones(5)
         self.receivedYPositions = np.ones(5)
         self.receivedRSSI = np.ones(5)
-
+        self.receivedMobileNodeNumber = 0
         self.fig, self.ax = plt.subplots()
         img = plt.imread("floorplan.png")
         self.ax.imshow(img, extent=[0,40,0,21])
@@ -99,6 +101,129 @@ class BaseProcessing:
     def animate(self):
         self.anim = animation.FuncAnimation(self.fig, self.update,interval=200, blit=False)
 
+
+    def calculate_positions(self):
+        self.lock_rssi_coords.acquire()
+        self.lock_data.acquire()
+        if (self.size_received_beacons == 3):
+            r1 = self.receivedRSSI[0]
+            r2 = self.receivedRSSI[1]
+            r3 = self.receivedRSSI[2]
+            
+            x1 = self.receivedXPositions[0]
+            x2 = self.receivedXPositions[1]
+            x3 = self.receivedXPositions[2]
+            y1 = self.receivedYPositions[0]
+            y2 = self.receivedYPositions[1]
+            y3 = self.receivedYPositions[2]
+
+            b1 = (r1**2) -(r3**2) - (x1**2) -(y1**2) +(x3**2) + (y3**2)
+            b2 = (r2**2) -(r3**2) - (x2**2) -(y2**2) +(x3**2) + (y3**2)
+
+            Ax1 = (2*(x3-x1))
+            Ax2 = (2*(x3-x2))
+
+            Ay1 = (2*(y3-y1))
+            Ay2 = (2*(y3-y2))
+            Ax_array = np.array([Ax1, Ax2])
+            Ay_array = np.array([Ay1, Ay2])
+            B_array = np.array([b1, b2])
+            A = np.vstack([Ax_array, Ay_array]).T
+       
+            x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
+            if(self.receivedMobileNodeNumber == 1):
+                self.mobileNode1x = x0
+                self.mobileNode1y = y0
+            else:
+                self.mobileNode2x = x0
+                self.mobileNode2y = y0
+        elif (self.size_received_beacons == 4):
+            r1 = self.receivedRSSI[0]
+            r2 = self.receivedRSSI[1]
+            r3 = self.receivedRSSI[2]
+            r4 = self.receivedRSSI[3]
+            x1 = self.receivedXPositions[0]
+            x2 = self.receivedXPositions[1]
+            x3 = self.receivedXPositions[2]
+            x4 = self.receivedXPositions[3]
+            y1 = self.receivedYPositions[0]
+            y2 = self.receivedYPositions[1]
+            y3 = self.receivedYPositions[2]
+            y4 = self.receivedYPositions[3]
+
+            b1 = (r1**2) -(r4**2) - (x1**2) -(y1**2) +(x4**2) + (y4**2)
+            b2 = (r2**2) -(r4**2) - (x2**2) -(y2**2) +(x4**2) + (y4**2)
+            b3 = (r3**2) -(r4**2) - (x3**2) -(y3**2) +(x4**2) + (y4**2)
+            Ax1 = (2*(x4-x1))
+            Ax2 = (2*(x4-x2))
+            Ax3 = (2*(x4-x3))
+            Ay1 = (2*(y4-y1))
+            Ay2 = (2*(y4-y2))
+            Ay3 = (2*(y4-y3))
+            Ax_array = np.array([Ax1, Ax2, Ax3])
+            Ay_array = np.array([Ay1, Ay2, Ay3])
+            B_array = np.array([b1, b2, b3])
+            A = np.vstack([Ax_array, Ay_array]).T
+       
+            x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
+            if(self.receivedMobileNodeNumber == 1):
+                self.mobileNode1x = x0
+                self.mobileNode1y = y0
+            else:
+                self.mobileNode2x = x0
+                self.mobileNode2y = y0
+        elif (self.size_received_beacons == 5):
+            r1 = self.receivedRSSI[0]
+            r2 = self.receivedRSSI[1]
+            r3 = self.receivedRSSI[2]
+            r4 = self.receivedRSSI[3]
+            r5 = self.receivedRSSI[4]
+
+            x1 = self.receivedXPositions[0]
+            x2 = self.receivedXPositions[1]
+            x3 = self.receivedXPositions[2]
+            x4 = self.receivedXPositions[3]
+            x5 = self.receivedXPositions[4]
+
+            y1 = self.receivedYPositions[0]
+            y2 = self.receivedYPositions[1]
+            y3 = self.receivedYPositions[2]
+            y4 = self.receivedYPositions[3]
+            y5 = self.receivedYPositions[4]
+
+            b1 = (r1**2) -(r5**2) - (x1**2) -(y1**2) +(x5**2) + (y5**2)
+            b2 = (r2**2) -(r5**2) - (x2**2) -(y2**2) +(x5**2) + (y5**2)
+            b3 = (r3**2) -(r5**2) - (x3**2) -(y3**2) +(x5**2) + (y5**2)
+            b4 = (r4**2) -(r5**2) - (x4**2) -(y4**2) +(x5**2) + (y5**2)
+
+            Ax1 = (2*(x5-x1))
+            Ax2 = (2*(x5-x2))
+            Ax3 = (2*(x5-x3))
+            Ax3 = (2*(x5-x4))
+            
+            Ay1 = (2*(y5-y1))
+            Ay2 = (2*(y5-y2))
+            Ay3 = (2*(y5-y3))
+            Ay3 = (2*(y5-y4))
+
+            Ax_array = np.array([Ax1, Ax2, Ax3, Ax4])
+            Ay_array = np.array([Ay1, Ay2, Ay3, Ay4])
+            B_array = np.array([b1, b2, b3, b4])
+            A = np.vstack([Ax_array, Ay_array]).T
+       
+            x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
+            if(self.receivedMobileNodeNumber == 1):
+                self.mobileNode1x = x0
+                self.mobileNode1y = y0
+            else:
+                self.mobileNode2x = x0
+                self.mobileNode2y = y0
+        self.lock_rssi_coords.release()
+        self.lock_data.release()
+
+
+    def test(self):
+        print(self.x0 * self.y0)
 def perform_least_square(BaseProcessing):
     while True:
         BaseProcessing.lock_data.acquire()
@@ -221,6 +346,7 @@ def perform_least_square(BaseProcessing):
         BaseProcessing.mobileNode1y = random.randint(8,10)
         print("Coords:%f,%f" % (BaseProcessing.x0, BaseProcessing.y0))
         print("MobileNode1:%f,%f" % (BaseProcessing.mobileNode1x, BaseProcessing.mobileNode1y))
+        
         BaseProcessing.lock_data.release()
         BaseProcessing.lock_rssi_coords.release()
         print("inside Least squartes")
@@ -260,10 +386,11 @@ def update_data(BaseProcessing):
                     #format = 
                     outputs = output_converted[1:-1].replace(" ", "").split(",")
                     # 3 rssi readings
+                    BaseProcessing.lock_data.acquire()
                     if(len(outputs) == 4):
                        
                         mobile_node_number = int((outputs[0])[-1:])
-                        
+                        BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
                         #nodeValues are "0-11"
                         nodeInfo1 = outputs[1].split(":")
@@ -290,7 +417,7 @@ def update_data(BaseProcessing):
                     if(len(outputs) == 5):
                         
                         mobile_node_number = int((outputs[0])[-1:])
-                        
+                        BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
                         #nodeValues are "0-11"
                         nodeInfo1 = outputs[1].split(":")
@@ -323,7 +450,7 @@ def update_data(BaseProcessing):
                     if(len(outputs) == 6):
                         
                         mobile_node_number = int((outputs[0])[-1:])
-                        
+                        BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
                         #nodeValues are "0-11"
                         nodeInfo1 = outputs[1].split(":")
@@ -356,6 +483,7 @@ def update_data(BaseProcessing):
                         BaseProcessing.receivedRSSI[2] = receivedRSSI3
                         BaseProcessing.receivedRSSI[3] = receivedRSSI4
                         BaseProcessing.receivedRSSI[4] = receivedRSSI5
+                    BaseProcessing.lock_data.release()
                             
 
                
