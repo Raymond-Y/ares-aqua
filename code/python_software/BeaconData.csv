@@ -1,0 +1,12 @@
+NodeA(xy),0,4
+NodeB(x-y),1.3,4
+NodeC(x-y),2.7,4
+NodeD(x-y),4,4
+NodeE(x-y),4,2.67
+NodeF(x-y),4,1.33
+NodeG(x-y),4,0
+NodeH(x-y),2.7,0
+NodeI(x-y),1.3,0
+NodeJ(x-y),0,0
+NodeK(x-y),0,1.33
+NodeL(x-y),0,2.67
