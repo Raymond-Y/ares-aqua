@@ -66,9 +66,11 @@ class BaseProcessing:
         self.fig, self.ax = plt.subplots()
         img = plt.imread("floorplan.png")
         self.ax.imshow(img, extent=[0,40,0,21])
-        self.graph, = self.ax.plot([], [],'ro')
+        #self.graph, = self.ax.plot([], [],'ro')
+
         self.mobilenode1, = self.ax.plot([],[],'go', markersize='12')
-        self.ax.axis([0, 41, 0, 21])
+        self.mobilenode2, = self.ax.plot([],[],'ro', markersize='12')
+        self.ax.axis([-20, 41, 0, 21])
         self.setup_beacons()
         self.writeFile = open('resultsStatic.csv','w')
     def setup_beacons(self):
@@ -91,8 +93,9 @@ class BaseProcessing:
 
     def update(self,extra):
         self.lock_rssi_coords.acquire()
-        self.graph.set_data(self.x0,self.y0)
+        #self.graph.set_data(self.x0,self.y0)
         self.mobilenode1.set_data(self.mobileNode1x, self.mobileNode1y)
+        self.mobilenode2.set_data(self.mobileNode2x, self.mobileNode2y)
         self.fig.suptitle("At X:%f, Y:%f, MobileNode:(%f,%f)" %(self.x0, self.y0, self.mobileNode1x, self.mobileNode1y))
 
         self.lock_rssi_coords.release()
