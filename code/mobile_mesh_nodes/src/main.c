@@ -73,11 +73,30 @@ const char *nodeNames[] = {
     // "4011-J",
     // "4011-K",
     "4011-L", // weak signal
-    "Zak_Node_AU", //TODO: change static node names
-    "Zak_Node_BU",
-    "Zak_Node_CU",
-    "Zak_Node_DU"
+    "Relay_W", //TODO: change static node names
+    "Relay_X",
+    "Relay_Y",
+    "Relay_Z"
 };
+
+uint16_t beaconRSSI[NUM_BEACONS][2] = {
+	{ 0x0000, 0x0010 }, // iBeacon A
+	{ 0x0001, 0x0020 }, // iBeacon B
+	// { 0x0002, 0x0030 }, // iBeacon C
+	{ 0x0003, 0x0040 }, // iBeacon D
+	{ 0x0004, 0x0050 }, // iBeacon E
+	{ 0x0005, 0x0060 }, // iBeacon F
+	{ 0x0006, 0x0070 }, // iBeacon G
+	{ 0x0007, 0x0080 }, // iBeacon H
+	{ 0x0008, 0x0090 }, // iBeacon I
+	{ 0x0009, 0x00A0 }, // iBeacon L
+	{ 0x000A, 0x0090 }, // Relay W
+	{ 0x000B, 0x00A0 }, // Relay X
+	{ 0x000C, 0x00B0 }, // Relay Y
+	{ 0x000D, 0x00C0 } // Relay Z
+};
+
+uint16_t staticNodeRSSI[4][2];
 
 void gen_uuid() {
     uint32_t rnd1 = sys_rand32_get();
@@ -253,6 +272,7 @@ static void set_onoff_state(struct bt_mesh_model *model, struct bt_mesh_msg_ctx 
 	onoff_state = msg_onoff_state;
 	uint8_t tid = net_buf_simple_pull_u8(buf);
 	printk("set onoff state: onoff=%u TID=%u", onoff_state, tid);
+	/*
 	if (onoff_state == 0)
 	{
 		thingy_led_off();
@@ -261,7 +281,7 @@ static void set_onoff_state(struct bt_mesh_model *model, struct bt_mesh_msg_ctx 
 	{
 		thingy_led_on(rgb_r,rgb_g,rgb_b);
 	}
-
+	*/
 	/*
 	 * 3.7.7.2 Acknowledged Set
 	 */ 
@@ -303,8 +323,24 @@ static void generic_onoff_set(struct bt_mesh_model *model, struct bt_mesh_msg_ct
 
 static void generic_onoff_set_unack(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf)
 {
-	printk("generic_onoff_set_unack\n");
-	set_onoff_state(model, ctx, buf, false);
+	//check unicast address - displayed on nrf mesh application
+	if (ctx->addr == 5) {
+		staticNodeRSSI[0][1] = (uint16_t) ctx->recv_rssi;
+
+	} else if (ctx->addr == 6) {
+		staticNodeRSSI[1][1] = (uint16_t) ctx->recv_rssi;
+
+	} else if (ctx->addr == 7) {
+		staticNodeRSSI[2][1] = (uint16_t) ctx->recv_rssi;
+
+	} else if (ctx->addr == 8) {
+		staticNodeRSSI[3][1] = (uint16_t) ctx->recv_rssi;
+
+	}
+	// staticNodeRSSI[0][1] = (uint16_t) ctx->recv_rssi;
+	// printk("addr:%d\napp:%d\nnet:%d\n", ctx->addr, ctx->app_idx, ctx->net_idx);
+	// beaconRSSI[9][1] = (uint16_t) ctx->recv_rssi;
+	// set_onoff_state(model, ctx, buf, false);
 }
 
 static const struct bt_mesh_model_op generic_onoff_op[] = {
@@ -377,26 +413,6 @@ static struct bt_mesh_health_srv health_srv = {
 // Composition
 // -----------
 
-// #define MAX_NUMBER_BEACONS 12
-
-// TODO: Change data based on RSSI values
-uint16_t beaconRSSI[NUM_BEACONS][2] = {
-	{ 0x0000, 0x0010 }, // iBeacon A
-	{ 0x0001, 0x0020 }, // iBeacon B
-	// { 0x0002, 0x0030 }, // iBeacon C
-	{ 0x0003, 0x0040 }, // iBeacon D
-	{ 0x0004, 0x0050 }, // iBeacon E
-	{ 0x0005, 0x0060 }, // iBeacon F
-	{ 0x0006, 0x0070 }, // iBeacon G
-	{ 0x0007, 0x0080 }, // iBeacon H
-	{ 0x0008, 0x0090 }, // iBeacon I
-	{ 0x0009, 0x00A0 }, // iBeacon L
-	{ 0x0008, 0x0090 }, // Relay W
-	{ 0x0009, 0x00A0 }, // Relay X
-	{ 0x000A, 0x00B0 }, // Relay Y
-	{ 0x000B, 0x00C0 } // Relay Z
-};
-
 #define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK	BT_MESH_MODEL_OP_2(0x82, 0x40)
 
 // 22 bytes (5 sets of beaconRSSI data, init msg, tid value)
@@ -422,12 +438,10 @@ static const struct bt_mesh_comp comp = {
 		.elem = elements,
 		.elem_count = ARRAY_SIZE(elements),
 };
-
-
 // Mobile to Base data model 
 
 static uint8_t test_tid = 0; // TODO: change
-int tempthing[13];
+int strongestSignals[13];
 
 int sendDataToBase(uint16_t message_type) {
 	int err;
@@ -444,7 +458,7 @@ int sendDataToBase(uint16_t message_type) {
 	struct net_buf_simple* msg = model->pub->msg;
 	bt_mesh_model_msg_init(msg, message_type);
 	for (int i = 0; i < NUM_BEACONS; i++) {
-		if (tempthing[i] == 1) {
+		if (strongestSignals[i] == 1) {
 			net_buf_simple_add_le16(msg, beaconRSSI[i][1]); 
 			net_buf_simple_add_le16(msg, beaconRSSI[i][0]);
 			numMsgsAdded++;
@@ -619,18 +633,6 @@ static bool parse_advertising_data(struct bt_data *data, void *user_data)
 }
 
 static int8_t beaconCount = 0;
-// static uint16_t tempMask = 0x0000;
-
-// #define BIT_SET(num, position) 		num |= 1UL << position
-// #define BIT_CLEAR(num, position) 	num &= ~(1UL << position)
-
-static inline void BIT_SET(uint16_t* num, int pos) {
-	*num |= (1U << pos);
-}
-
-static inline void BIT_CLEAR(uint16_t* num, int pos) {
-	*num &= ~(1U << pos);
-}
 
 /**
  * @brief Callback for when an advertisement has been found
@@ -659,7 +661,7 @@ static void reset_beacon_values() {
 	for (int i = 0; i < NUM_BEACONS; i++) {
 		beaconRSSI[i][1] = 0x0000;
 		nodeData[i].rssi = 0x00;
-		tempthing[i] = 1;
+		strongestSignals[i] = 1;
 	}
 	beaconCount = 0; // reset count index
 }
@@ -705,7 +707,7 @@ void main(void)
 		// read RSSI data
 		// k_msleep(500);
 		if (bt_mesh_is_provisioned()) {
-
+			
 			k_sem_take(&scanDoneSem, K_FOREVER);
 			k_sem_give(&scanDoneSem);
 
@@ -724,8 +726,15 @@ void main(void)
 				printk("stop scanning failed (err %d)\n", err);
 			}
 		
+			bt_mesh_resume();
+			k_msleep(200);
+
+			for (int i = 0; i < 4; i++) {
+				beaconRSSI[i + 9][1] = staticNodeRSSI[i][1];
+				// printk("i: %d    rssi: %d\n", i, beaconRSSI[i][1]);
+			}
+
 			for (int j = 0; j < NUM_BEACONS; j++) {
-				// beaconRSSI[j][1] = (uint16_t) nodeData[j].rssi;
 				int count = NUM_BEACONS;
 				printk("%s: %d\n", nodeNames[j], beaconRSSI[j][1]);
 				for (int k = 0; k < NUM_BEACONS; k++) {
@@ -733,21 +742,26 @@ void main(void)
 					if (beaconRSSI[j][1] < beaconRSSI[k][1]) {
 						count--;
 						if (count <= 8) {
-							tempthing[j] = 0;
-							// BIT_SET(&tempMask, j);
+							strongestSignals[j] = 0;
 							break;
 						}
 					}
 				}
 			}
-			bt_mesh_resume();
+
+			for (int i = 0; i < 4; i++) {
+				staticNodeRSSI[i][1] = 0;
+			}
 			// k_msleep(500);
 			k_sem_take(&scanDoneSem, K_FOREVER);
 			if (sendDataToBase(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK)) {
 				printk("unable to send RSSI data\n");
 			}
+			
 			k_msleep(1500);
 			
+		} else {
+			k_msleep(500);
 		}
 		// k_sem_give(&scanDoneSem);
 

@@ -226,6 +226,8 @@ uint8_t current_hsl_inx = 1;
 BT_MESH_MODEL_PUB_DEFINE(gen_onoff_cli, NULL, 2);
 BT_MESH_MODEL_PUB_DEFINE(light_hsl_cli, NULL, 2);
 
+// BT_MESH_MODEL_PUB_DEFINE(static_adv_cli, NULL, 2);
+
 static struct bt_mesh_model sig_models[] = {
 				BT_MESH_MODEL_CFG_SRV,
 				BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
@@ -518,5 +520,16 @@ void main(void)
 	if (err)
 	{
 			printk("bt_enable failed with err %d\n", err);
+	}
+
+	while (1) {
+		if (bt_mesh_is_provisioned()) {
+			// send adv msgs to mobile nodes
+			genericOnOffSetUnAck(1);
+			k_msleep(200);
+
+		} else {
+			k_msleep(500);
+		}
 	}
 }

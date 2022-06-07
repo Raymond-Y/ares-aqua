@@ -1,8 +1,8 @@
 set(QEMU_EXTRA_FLAGS -s)
 
-option(W"select static node" OFF)
+option(W "select static node" OFF)
 option(X "select static node" OFF)
-option(Y"SELECT STATIC NODE" OFF)
+option(Y "SELECT STATIC NODE" OFF)
 option(Z "SELECT STATIC NODE" OFF)
 IF(${W})
     set(CONF_FILE conf_files/static_node_W.conf prj.conf)

@@ -223,6 +223,14 @@ static void analyse_received_data(uint16_t* msg_rssi_value, uint16_t* msg_rssi_n
 			printk("4011-I: %d\n", (int8_t) msg_rssi_value[i]);
 		} else if (msg_rssi_node[i] == 0x0009) {
 			printk("4011-L: %d\n", (int8_t) msg_rssi_value[i]);
+		} else if (msg_rssi_node[i] == 0x000A) {
+			printk("Relay-W: %d\n", (int8_t) msg_rssi_value[i]);
+		} else if (msg_rssi_node[i] == 0x000B) {
+			printk("Relay-X: %d\n", (int8_t) msg_rssi_value[i]);
+		} else if (msg_rssi_node[i] == 0x000C) {
+			printk("Relay-Y: %d\n", (int8_t) msg_rssi_value[i]);
+		} else if (msg_rssi_node[i] == 0x000D) {
+			printk("Relay-Z: %d\n", (int8_t) msg_rssi_value[i]);
 		}
 	}
 }
@@ -230,14 +238,17 @@ static void analyse_received_data(uint16_t* msg_rssi_value, uint16_t* msg_rssi_n
 static void get_data_from_mobile(struct bt_mesh_model* model, struct bt_mesh_msg_ctx* ctx, struct net_buf_simple* buf) {
 	uint16_t msg_rssi_value[5];
 	uint16_t msg_rssi_node[5];
+	uint16_t pls;
 	// reads data backwards (value then node)
 	// {node, value}
 	for (int i = 0; i < 5; i++) {
 		msg_rssi_value[i] = net_buf_simple_pull_le16(buf);
 		msg_rssi_node[i] = net_buf_simple_pull_le16(buf);
-	}
-	analyse_received_data(msg_rssi_value, msg_rssi_node);
 
+	}
+	// printk("rssi YAY: %d\n", ctx->recv_rssi);
+	analyse_received_data(msg_rssi_value, msg_rssi_node);
+	
 	/*
 
 	if (msg_rssi_node == 0x0000) {
