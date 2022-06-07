@@ -12,6 +12,7 @@ void init_pb(void);
 
 bool get_pb_state(void);
 
+int get_node_family(void);
 
 
 #endif

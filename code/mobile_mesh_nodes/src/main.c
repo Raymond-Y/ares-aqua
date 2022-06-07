@@ -15,11 +15,25 @@
 #include <bluetooth/mesh.h>
 #include <random/rand32.h>
 
+#include "s4589514_pb.h"
+
 #define BLE_MAX_NAME_LEN 	50
 #define NUM_BEACONS 		13 // 9 iBeacons + 4 mesh relay beacons (todo)
 
 // GPIO for the Thingy LED controller
 const struct device *led_ctrlr;
+
+static int nodeFamily = 0;
+uint16_t hsl[8][3] = {
+	{ 0x0000, 0x0000, 0x0000 }, // black
+	{ 0x0000, 0xFFFF, 0x7FFF }, // red 
+	{ 0x5555, 0xFFFF, 0x7FFF }, // green
+	{ 0xAAAA, 0xFFFF, 0x7FFF }, // blue
+	{ 0x2AAA, 0xFFFF, 0x7FFF }, // yellow
+	{ 0xD555, 0xFFFF, 0x7FFF }, // magenta
+	{ 0x7FFF, 0xFFFF, 0x7FFF }, // cyan
+	{ 0x0000, 0x0000, 0xFFFF }  // white
+};
 
 struct NodeData
 {
@@ -28,13 +42,6 @@ struct NodeData
 };
 
 static struct NodeData nodeData[NUM_BEACONS];
-
-
-// Semaphores to signal that advertisement was received from node at that index
-static struct k_sem scannedSems[NUM_BEACONS];
-
-// Semaphore to signal that a scan has been completed
-static struct k_sem scanDoneSem;
 
 #define PORT "GPIO_P0"
 #define LED_R 7
@@ -482,7 +489,6 @@ int sendDataToBase(uint16_t message_type) {
 	if (err) {
 		printk("bt_mesh_model_publish err %d\n", err);
 	}
-	k_sem_give(&scanDoneSem);
 	return err;
 }
 
@@ -588,20 +594,6 @@ void indicate_on() {
 }
 
 /**
- * @brief Initialise all semaphores used in BLE advertisement scanning
- */
-static void scanned_sem_init(void)
-{
-    k_sem_init(&scanDoneSem, 0, 1);
-
-    for (int i = 0; i < NUM_BEACONS; ++i)
-    {
-
-        k_sem_init(&scannedSems[i], 0, 1);
-    }
-}
-
-/**
  * @brief Callback function to extract GAP name from BLE
  *          advertisements
  * 
@@ -657,6 +649,16 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t advType, stru
     }
 }
 
+static void check_family_colour() {
+	int tempFam = get_node_family();
+
+	if (nodeFamily != tempFam) {
+		nodeFamily = tempFam;
+		convert_hsl_to_rgb(hsl[nodeFamily][0], hsl[nodeFamily][1], hsl[nodeFamily][2]);
+		thingy_led_on(rgb_r, rgb_g, rgb_b);
+	}
+}
+
 static void reset_beacon_values() {
 	for (int i = 0; i < NUM_BEACONS; i++) {
 		beaconRSSI[i][1] = 0x0000;
@@ -673,8 +675,9 @@ void main(void)
 	test_tid = 0;
 
 	configure_thingy_led_controller();
-
     indicate_on();
+
+	init_pb();
 
 	// set default colour to white
 	rgb_r = 255;
@@ -695,22 +698,13 @@ void main(void)
 		.window = 0x0050
 	};
 
-	scanned_sem_init();
-	k_sem_give(&scanDoneSem);
-
-	// err = bt_le_scan_start(&scanParams, scan_cb);
-	// if (err) {
-	// 	printk("starting scanning failed (err %d)\n", err);
-	// }
-
 	while (1) {
 		// read RSSI data
 		// k_msleep(500);
+		check_family_colour();
+
 		if (bt_mesh_is_provisioned()) {
 			
-			k_sem_take(&scanDoneSem, K_FOREVER);
-			k_sem_give(&scanDoneSem);
-
 			bt_mesh_suspend();
 			reset_beacon_values();
 			k_msleep(100);
@@ -753,7 +747,6 @@ void main(void)
 				staticNodeRSSI[i][1] = 0;
 			}
 			// k_msleep(500);
-			k_sem_take(&scanDoneSem, K_FOREVER);
 			if (sendDataToBase(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK)) {
 				printk("unable to send RSSI data\n");
 			}
@@ -763,7 +756,5 @@ void main(void)
 		} else {
 			k_msleep(500);
 		}
-		// k_sem_give(&scanDoneSem);
-
 	}
 }

@@ -194,53 +194,61 @@ static void generic_onoff_status(struct bt_mesh_model *model,struct bt_mesh_msg_
 #define BT_MESH_MODEL_OP_GENERIC_ONOFF_SET_UNACK  BT_MESH_MODEL_OP_2(0x82, 0x03)
 #define BT_MESH_MODEL_OP_GENERIC_ONOFF_STATUS     BT_MESH_MODEL_OP_2(0x82, 0x04)
 
+// BEACON data receive (MOBILE TO BASE)
+#define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK	BT_MESH_MODEL_OP_2(0x82, 0x40)
+
+
 static const struct bt_mesh_model_op gen_onoff_cli_op[] = {
 		{BT_MESH_MODEL_OP_GENERIC_ONOFF_STATUS, 1, generic_onoff_status},
 		BT_MESH_MODEL_OP_END,
 };
 
-// BEACON data receive (MOBILE TO BASE)
-
-#define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK	BT_MESH_MODEL_OP_2(0x82, 0x40)
-
 static void analyse_received_data(uint16_t* msg_rssi_value, uint16_t* msg_rssi_node) {
 	for (int i = 0; i < 5; i++) {
 		if (msg_rssi_node[i] == 0x0000) {
-			printk("4011-A: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("0:%d,", (int8_t) msg_rssi_value[i]); // 4011-A
 		} else if (msg_rssi_node[i] == 0x0001) {
-			printk("4011-B: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("1:%d,", (int8_t) msg_rssi_value[i]); // 4011-B
 		} else if (msg_rssi_node[i] == 0x0003) {
-			printk("4011-D: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("2:%d,", (int8_t) msg_rssi_value[i]); // 4011-D
 		} else if (msg_rssi_node[i] == 0x0004) {
-			printk("4011-E: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("3:%d,", (int8_t) msg_rssi_value[i]); // 4011-E
 		} else if (msg_rssi_node[i] == 0x0005) {
-			printk("4011-F: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("4:%d,", (int8_t) msg_rssi_value[i]); // 4011-F
 		} else if (msg_rssi_node[i] == 0x0006) {
-			printk("4011-G: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("5:%d,", (int8_t) msg_rssi_value[i]); // 4011-G
 		} else if (msg_rssi_node[i] == 0x0007) {
-			printk("4011-H: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("6:%d,", (int8_t) msg_rssi_value[i]); // 4011-H
 		} else if (msg_rssi_node[i] == 0x0008) {
-			printk("4011-I: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("7:%d,", (int8_t) msg_rssi_value[i]); // 4011-I
 		} else if (msg_rssi_node[i] == 0x0009) {
-			printk("4011-L: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("8:%d,", (int8_t) msg_rssi_value[i]); // 4011-L
 		} else if (msg_rssi_node[i] == 0x000A) {
-			printk("Relay-W: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("9:%d,", (int8_t) msg_rssi_value[i]); // Relay-W
 		} else if (msg_rssi_node[i] == 0x000B) {
-			printk("Relay-X: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("10:%d,", (int8_t) msg_rssi_value[i]); // Relay-X
 		} else if (msg_rssi_node[i] == 0x000C) {
-			printk("Relay-Y: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("11:%d,", (int8_t) msg_rssi_value[i]); // Relay-Y
 		} else if (msg_rssi_node[i] == 0x000D) {
-			printk("Relay-Z: %d\n", (int8_t) msg_rssi_value[i]);
+			printk("12:%d,", (int8_t) msg_rssi_value[i]); // Relay-Z
 		}
 	}
+	printk("}\n");
 }
 
 static void get_data_from_mobile(struct bt_mesh_model* model, struct bt_mesh_msg_ctx* ctx, struct net_buf_simple* buf) {
 	uint16_t msg_rssi_value[5];
 	uint16_t msg_rssi_node[5];
-	uint16_t pls;
 	// reads data backwards (value then node)
 	// {node, value}
+	// printk("addr: %d\n", ctx->addr);
+	if (ctx->addr == 4) {
+		//mobile node 1
+		printk("{Mobile1, ");
+	} else if (ctx->addr == 9) {
+		// mobile node 2
+		printk("{Mobile2, ");
+	}
 	for (int i = 0; i < 5; i++) {
 		msg_rssi_value[i] = net_buf_simple_pull_le16(buf);
 		msg_rssi_node[i] = net_buf_simple_pull_le16(buf);
@@ -248,29 +256,6 @@ static void get_data_from_mobile(struct bt_mesh_model* model, struct bt_mesh_msg
 	}
 	// printk("rssi YAY: %d\n", ctx->recv_rssi);
 	analyse_received_data(msg_rssi_value, msg_rssi_node);
-	
-	/*
-
-	if (msg_rssi_node == 0x0000) {
-		printk("4011-A: %d\n", (int8_t) msg_rssi_value);
-	} else if (msg_rssi_node == 0x0001) {
-		printk("4011-B: %d\n", (int8_t) msg_rssi_value);
-	} else if (msg_rssi_node == 0x0002) {
-		printk("4011-D: %d\n", (int8_t) msg_rssi_value);
-	} else if (msg_rssi_node == 0x0003) {
-		printk("4011-E: %d\n", (int8_t) msg_rssi_value);
-	} else if (msg_rssi_node == 0x0004) {
-		printk("4011-F: %d\n", (int8_t) msg_rssi_value);
-	} else if (msg_rssi_node == 0x0005) {
-		printk("4011-G: %d\n", (int8_t) msg_rssi_value);
-	} else if (msg_rssi_node == 0x0006) {
-		printk("4011-H: %d\n", (int8_t) msg_rssi_value);
-	} else if (msg_rssi_node == 0x0007) {
-		printk("4011-I: %d\n", (int8_t) msg_rssi_value);
-	} else if (msg_rssi_node == 0x0008) {
-		printk("4011-L: %d\n", (int8_t) msg_rssi_value);
-	}
-	*/
 	
 	// printk("\n node: %d: %d\n", msg_rssi_node, msg_rssi_value);
 	if (model->pub->addr != BT_MESH_ADDR_UNASSIGNED) {
@@ -280,7 +265,7 @@ static void get_data_from_mobile(struct bt_mesh_model* model, struct bt_mesh_msg
 }
 
 static void get_data_from_mobile_unack(struct bt_mesh_model *model,struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf) {
-	printk("get_data_from_mobile_unack\n");
+	// printk("get_data_from_mobile_unack\n");
 	get_data_from_mobile(model, ctx, buf);
 }
 

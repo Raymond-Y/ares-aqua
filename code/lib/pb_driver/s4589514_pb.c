@@ -20,6 +20,7 @@
 #define SW0_NODE    DT_ALIAS(sw0)
 
 bool pbState;
+static int nodeFamily = 0;
 
 static const struct gpio_dt_spec button = 
             GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios, {0});
@@ -29,12 +30,16 @@ static struct gpio_callback button_cb_data;
 static void button_pressed(const struct device *dev, 
             struct gpio_callback *cb, uint32_t pins)
 {
-    pbState = !pbState;
-	if (pbState) {
-        printk("button ON\n");
-    } else {
-        printk("button OFF\n");
+    nodeFamily++;
+    if (nodeFamily == 8) {
+        nodeFamily = 0;
     }
+    // pbState = !pbState;
+	// if (pbState) {
+    //     printk("button ON\n");
+    // } else {
+    //     printk("button OFF\n");
+    // }
 }
 
 void init_pb() {
@@ -61,4 +66,8 @@ void init_pb() {
 bool get_pb_state(void) {
 
     return pbState;
+}
+
+int get_node_family(void) {
+    return nodeFamily;
 }

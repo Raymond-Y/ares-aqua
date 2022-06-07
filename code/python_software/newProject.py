@@ -55,10 +55,10 @@ class BaseProcessing:
         self.size_received_beacons = 0
         self.x0 = 3
         self.y0 = 2
-        self.mobileNode1x = 0
-        self.mobileNode1y = 0
-        self.mobileNode2x = 0
-        self.mobileNode2y = 0
+        self.mobileNode1x = 3
+        self.mobileNode1y = 4
+        self.mobileNode2x = 1
+        self.mobileNode2y = 2
         self.receivedXPositions = np.ones(5)
         self.receivedYPositions = np.ones(5)
         self.receivedRSSI = np.ones(5)
@@ -109,6 +109,7 @@ class BaseProcessing:
     def calculate_positions(self):
         self.lock_rssi_coords.acquire()
         self.lock_data.acquire()
+        print("ENTER CALCULATE POSITIONS")
         if (self.size_received_beacons == 3):
             r1 = self.receivedRSSI[0]
             r2 = self.receivedRSSI[1]
@@ -381,18 +382,21 @@ def update_data(BaseProcessing):
 
                 output = BaseProcessing.serial_port.readline()
                 #print(output)
-                output_converted = ((str(output, 'utf-8'))[:-1])
+                output_converted = ((str(output, 'utf-8'))[:-2])
                 if len(output_converted) > 1:
                     print(output_converted)
+                    
                     #output_converted = '{"Node": 52, "rssi":93}'
                     #output_converted = '{"Node": 52, "rssi":93, "ultra":53}'
 
                     #format = 
                     outputs = output_converted[1:-1].replace(" ", "").split(",")
+                    print(outputs)
+                    print(len(outputs))
                     # 3 rssi readings
                     BaseProcessing.lock_data.acquire()
                     if(len(outputs) == 4):
-                       
+                        print("ACUUIRED 3 data")
                         mobile_node_number = int((outputs[0])[-1:])
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
@@ -404,12 +408,12 @@ def update_data(BaseProcessing):
                         nodeNumber1 = int(nodeInfo1[0])
                         nodeNumber2 = int(nodeInfo2[0])
                         nodeNumber3 = int(nodeInfo3[0])
-                        BaseProcessing.receivedXPositions[0] = self.beacon_xvals[nodeNumber1]
-                        BaseProcessing.receivedYPositions[0] = self.beacon_yvals[nodeNumber1]
-                        BaseProcessing.receivedXPositions[1] = self.beacon_xvals[nodeNumber2]
-                        BaseProcessing.receivedYPositions[1] = self.beacon_yvals[nodeNumber2]
-                        BaseProcessing.receivedXPositions[2] = self.beacon_xvals[nodeNumber3]
-                        BaseProcessing.receivedYPositions[2] = self.beacon_yvals[nodeNumber3]
+                        BaseProcessing.receivedXPositions[0] = BaseProcessing.beacon_xvals[nodeNumber1]
+                        BaseProcessing.receivedYPositions[0] = BaseProcessing.beacon_yvals[nodeNumber1]
+                        BaseProcessing.receivedXPositions[1] = BaseProcessing.beacon_xvals[nodeNumber2]
+                        BaseProcessing.receivedYPositions[1] = BaseProcessing.beacon_yvals[nodeNumber2]
+                        BaseProcessing.receivedXPositions[2] = BaseProcessing.beacon_xvals[nodeNumber3]
+                        BaseProcessing.receivedYPositions[2] = BaseProcessing.beacon_yvals[nodeNumber3]
                         receivedRSSI1 = (nodeInfo1[1])
                         receivedRSSI2 = (nodeInfo2[1])
                         receivedRSSI3= (nodeInfo3[1])
@@ -417,14 +421,14 @@ def update_data(BaseProcessing):
                         receivedRSSI_actual2 = 10**((-53-float(receivedRSSI2))/ (10*2))
                         receivedRSSI_actual3 = 10**((-53-float(receivedRSSI3))/ (10*2))
 
-
+                        BaseProcessing.lock_data.release()
                         BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
                         BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
                         BaseProcessing.receivedRSSI[2] = receivedRSSI_actual3
                         BaseProcessing.calculate_positions()
                         
                     if(len(outputs) == 5):
-                        
+                        print("ACUUIRED 4 data")
                         mobile_node_number = int((outputs[0])[-1:])
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
@@ -437,15 +441,15 @@ def update_data(BaseProcessing):
                         nodeNumber2 = int(nodeInfo2[0])
                         nodeNumber3 = int(nodeInfo3[0])
                         nodeNumber4 = int(nodeInfo4[0])
-                        BaseProcessing.receivedXPositions[0] = self.beacon_xvals[nodeNumber1]
-                        BaseProcessing.receivedYPositions[0] = self.beacon_yvals[nodeNumber1]
-                        BaseProcessing.receivedXPositions[1] = self.beacon_xvals[nodeNumber2]
-                        BaseProcessing.receivedYPositions[1] = self.beacon_yvals[nodeNumber2]
-                        BaseProcessing.receivedXPositions[2] = self.beacon_xvals[nodeNumber3]
-                        BaseProcessing.receivedYPositions[2] = self.beacon_yvals[nodeNumber3]
-                        BaseProcessing.receivedXPositions[3] = self.beacon_xvals[nodeNumber4]
-                        BaseProcessing.receivedYPositions[3] = self.beacon_yvals[nodeNumber4]
 
+                        BaseProcessing.receivedXPositions[0] = BaseProcessing.beacon_xvals[nodeNumber1]
+                        BaseProcessing.receivedYPositions[0] = BaseProcessing.beacon_yvals[nodeNumber1]
+                        BaseProcessing.receivedXPositions[1] = BaseProcessing.beacon_xvals[nodeNumber2]
+                        BaseProcessing.receivedYPositions[1] = BaseProcessing.beacon_yvals[nodeNumber2]
+                        BaseProcessing.receivedXPositions[2] = BaseProcessing.beacon_xvals[nodeNumber3]
+                        BaseProcessing.receivedYPositions[2] = BaseProcessing.beacon_yvals[nodeNumber3]
+                        BaseProcessing.receivedXPositions[3] = BaseProcessing.beacon_xvals[nodeNumber4]
+                        BaseProcessing.receivedYPositions[3] = BaseProcessing.beacon_yvals[nodeNumber4]
 
 
                         receivedRSSI1 = (nodeInfo1[1])
@@ -461,13 +465,13 @@ def update_data(BaseProcessing):
                         BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
                         BaseProcessing.receivedRSSI[2] = receivedRSSI_actual3
                         BaseProcessing.receivedRSSI[3] = receivedRSSI_actual4
-
+                        BaseProcessing.lock_data.release()
                         BaseProcessing.calculate_positions()
-
+                        print("END ACUUIRED 4 data")
 
                         
                     if(len(outputs) == 6):
-                        
+                        print("ACUUIRED 5 data")
                         mobile_node_number = int((outputs[0])[-1:])
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
@@ -482,16 +486,16 @@ def update_data(BaseProcessing):
                         nodeNumber3 = int(nodeInfo3[0])
                         nodeNumber4 = int(nodeInfo4[0])
                         nodeNumber5 = int(nodeInfo5[0])
-                        BaseProcessing.receivedXPositions[0] = self.beacon_xvals[nodeNumber1]
-                        BaseProcessing.receivedYPositions[0] = self.beacon_yvals[nodeNumber1]
-                        BaseProcessing.receivedXPositions[1] = self.beacon_xvals[nodeNumber2]
-                        BaseProcessing.receivedYPositions[1] = self.beacon_yvals[nodeNumber2]
-                        BaseProcessing.receivedXPositions[2] = self.beacon_xvals[nodeNumber3]
-                        BaseProcessing.receivedYPositions[2] = self.beacon_yvals[nodeNumber3]
-                        BaseProcessing.receivedXPositions[3] = self.beacon_xvals[nodeNumber4]
-                        BaseProcessing.receivedYPositions[3] = self.beacon_yvals[nodeNumber4]
-                        BaseProcessing.receivedXPositions[4] = self.beacon_xvals[nodeNumber5]
-                        BaseProcessing.receivedYPositions[4] = self.beacon_yvals[nodeNumber5]
+                        BaseProcessing.receivedXPositions[0] = BaseProcessing.beacon_xvals[nodeNumber1]
+                        BaseProcessing.receivedYPositions[0] = BaseProcessing.beacon_yvals[nodeNumber1]
+                        BaseProcessing.receivedXPositions[1] = BaseProcessing.beacon_xvals[nodeNumber2]
+                        BaseProcessing.receivedYPositions[1] = BaseProcessing.beacon_yvals[nodeNumber2]
+                        BaseProcessing.receivedXPositions[2] = BaseProcessing.beacon_xvals[nodeNumber3]
+                        BaseProcessing.receivedYPositions[2] = BaseProcessing.beacon_yvals[nodeNumber3]
+                        BaseProcessing.receivedXPositions[3] = BaseProcessing.beacon_xvals[nodeNumber4]
+                        BaseProcessing.receivedYPositions[3] = BaseProcessing.beacon_yvals[nodeNumber4]
+                        BaseProcessing.receivedXPositions[4] = BaseProcessing.beacon_xvals[nodeNumber5]
+                        BaseProcessing.receivedYPositions[4] = BaseProcessing.beacon_yvals[nodeNumber5]
 
 
                         receivedRSSI1 = (nodeInfo1[1])
@@ -512,11 +516,11 @@ def update_data(BaseProcessing):
 
                         BaseProcessing.receivedRSSI[4] = receivedRSSI_actual5
 
+                        print("END ACUUIRED 5 data")
 
-
-
+                        BaseProcessing.lock_data.release()
                         BaseProcessing.calculate_positions()
-                    BaseProcessing.lock_data.release()
+                    
                             
 
                
@@ -578,7 +582,7 @@ def updateGraph(BaseProcessing):
     pass
 
 def main():
-    
+    time.sleep(4)
     baseProgram = BaseProcessing()
     
     reading_thr = threading.Thread(target = update_data, args=(baseProgram,))
