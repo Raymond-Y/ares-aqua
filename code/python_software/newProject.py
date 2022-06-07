@@ -23,8 +23,8 @@ class BaseProcessing:
         self.lock_rssi_coords = threading.Lock()
         self.beacon_x1 = 0
         self.beacon_y1 = 0
-        self.beacon_xvals = np.empty(12)
-        self.beacon_yvals = np.empty(12)
+        self.beacon_xvals = np.empty(13)
+        self.beacon_yvals = np.empty(13)
 
         self.mobile_x = 0
         self.mobile_y = 0
@@ -64,13 +64,14 @@ class BaseProcessing:
         self.receivedRSSI = np.ones(5)
         self.receivedMobileNodeNumber = 0
         self.fig, self.ax = plt.subplots()
-        img = plt.imread("floorplan.png")
-        self.ax.imshow(img, extent=[0,40,0,21])
+        img = plt.imread("floorplan.PNG")
+        self.ax.imshow(img, extent=[0,29.9,0,27.6])
         #self.graph, = self.ax.plot([], [],'ro')
 
         self.mobilenode1, = self.ax.plot([],[],'go', markersize='12')
         self.mobilenode2, = self.ax.plot([],[],'ro', markersize='12')
-        self.ax.axis([-20, 41, 0, 21])
+        
+        self.ax.axis([0, 41, 0, 21])
         self.setup_beacons()
         self.writeFile = open('resultsStatic.csv','w')
     def setup_beacons(self):
@@ -409,13 +410,18 @@ def update_data(BaseProcessing):
                         BaseProcessing.receivedYPositions[1] = self.beacon_yvals[nodeNumber2]
                         BaseProcessing.receivedXPositions[2] = self.beacon_xvals[nodeNumber3]
                         BaseProcessing.receivedYPositions[2] = self.beacon_yvals[nodeNumber3]
-                        receivedRSSI1 = int(nodeInfo1[1])
-                        receivedRSSI2 = int(nodeInfo2[1])
-                        receivedRSSI3= int(nodeInfo3[1])
-                        BaseProcessing.receivedRSSI[0] = receivedRSSI1
-                        BaseProcessing.receivedRSSI[1] = receivedRSSI2
-                        BaseProcessing.receivedRSSI[2] = receivedRSSI3
+                        receivedRSSI1 = (nodeInfo1[1])
+                        receivedRSSI2 = (nodeInfo2[1])
+                        receivedRSSI3= (nodeInfo3[1])
+                        receivedRSSI_actual1 = 10**((-53-float(receivedRSSI1))/ (10*2))
+                        receivedRSSI_actual2 = 10**((-53-float(receivedRSSI2))/ (10*2))
+                        receivedRSSI_actual3 = 10**((-53-float(receivedRSSI3))/ (10*2))
 
+
+                        BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
+                        BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
+                        BaseProcessing.receivedRSSI[2] = receivedRSSI_actual3
+                        BaseProcessing.calculate_positions()
                         
                     if(len(outputs) == 5):
                         
@@ -439,14 +445,24 @@ def update_data(BaseProcessing):
                         BaseProcessing.receivedYPositions[2] = self.beacon_yvals[nodeNumber3]
                         BaseProcessing.receivedXPositions[3] = self.beacon_xvals[nodeNumber4]
                         BaseProcessing.receivedYPositions[3] = self.beacon_yvals[nodeNumber4]
-                        receivedRSSI1 = int(nodeInfo1[1])
-                        receivedRSSI2 = int(nodeInfo2[1])
-                        receivedRSSI3= int(nodeInfo3[1])
-                        receivedRSSI4= int(nodeInfo4[1])
-                        BaseProcessing.receivedRSSI[0] = receivedRSSI1
-                        BaseProcessing.receivedRSSI[1] = receivedRSSI2
-                        BaseProcessing.receivedRSSI[2] = receivedRSSI3
-                        BaseProcessing.receivedRSSI[3] = receivedRSSI4
+
+
+
+                        receivedRSSI1 = (nodeInfo1[1])
+                        receivedRSSI2 = (nodeInfo2[1])
+                        receivedRSSI3= (nodeInfo3[1])
+                        receivedRSSI4= (nodeInfo4[1])
+                        receivedRSSI_actual1 = 10**((-53-float(receivedRSSI1))/ (10*2))
+                        receivedRSSI_actual2 = 10**((-53-float(receivedRSSI2))/ (10*2))
+                        receivedRSSI_actual3 = 10**((-53-float(receivedRSSI3))/ (10*2))
+                        receivedRSSI_actual4 = 10**((-53-float(receivedRSSI4))/ (10*2))
+
+                        BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
+                        BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
+                        BaseProcessing.receivedRSSI[2] = receivedRSSI_actual3
+                        BaseProcessing.receivedRSSI[3] = receivedRSSI_actual4
+
+                        BaseProcessing.calculate_positions()
 
 
                         
@@ -476,16 +492,30 @@ def update_data(BaseProcessing):
                         BaseProcessing.receivedYPositions[3] = self.beacon_yvals[nodeNumber4]
                         BaseProcessing.receivedXPositions[4] = self.beacon_xvals[nodeNumber5]
                         BaseProcessing.receivedYPositions[4] = self.beacon_yvals[nodeNumber5]
-                        receivedRSSI1 = int(nodeInfo1[1])
-                        receivedRSSI2 = int(nodeInfo2[1])
-                        receivedRSSI3= int(nodeInfo3[1])
-                        receivedRSSI4= int(nodeInfo4[1])
-                        receivedRSSI5= int(nodeInfo5[1])
-                        BaseProcessing.receivedRSSI[0] = receivedRSSI1
-                        BaseProcessing.receivedRSSI[1] = receivedRSSI2
-                        BaseProcessing.receivedRSSI[2] = receivedRSSI3
-                        BaseProcessing.receivedRSSI[3] = receivedRSSI4
-                        BaseProcessing.receivedRSSI[4] = receivedRSSI5
+
+
+                        receivedRSSI1 = (nodeInfo1[1])
+                        receivedRSSI2 = (nodeInfo2[1])
+                        receivedRSSI3= (nodeInfo3[1])
+                        receivedRSSI4= (nodeInfo4[1])
+                        receivedRSSI5= (nodeInfo5[1])
+                        receivedRSSI_actual1 = 10**((-53-float(receivedRSSI1))/ (10*2))
+                        receivedRSSI_actual2 = 10**((-53-float(receivedRSSI2))/ (10*2))
+                        receivedRSSI_actual3 = 10**((-53-float(receivedRSSI3))/ (10*2))
+                        receivedRSSI_actual4 = 10**((-53-float(receivedRSSI4))/ (10*2))
+                        receivedRSSI_actual5 = 10**((-53-float(receivedRSSI5))/ (10*2))
+
+                        BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
+                        BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
+                        BaseProcessing.receivedRSSI[2] = receivedRSSI_actual3
+                        BaseProcessing.receivedRSSI[3] = receivedRSSI_actual4
+
+                        BaseProcessing.receivedRSSI[4] = receivedRSSI_actual5
+
+
+
+
+                        BaseProcessing.calculate_positions()
                     BaseProcessing.lock_data.release()
                             
 
@@ -556,7 +586,7 @@ def main():
     reading_thr.start()
     lsq_thr = threading.Thread(target = perform_least_square, args=(baseProgram,))
     lsq_thr.setDaemon(True)
-    lsq_thr.start()
+    #lsq_thr.start()
     #updategraph_thr = threading.Thread(target = updateGraph, args=(baseProgram,))
     #updategraph_thr.setDaemon(True)
     #updategraph_thr.start()
