@@ -25,6 +25,7 @@ class BaseProcessing:
         self.beacon_y1 = 0
         self.beacon_xvals = np.empty(12)
         self.beacon_yvals = np.empty(12)
+
         self.mobile_x = 0
         self.mobile_y = 0
         self.nodeA_index = 0
@@ -51,10 +52,15 @@ class BaseProcessing:
         self.rssi_data_samples_nodeJ = np.ones(ARRAY_SIZE)
         self.rssi_data_samples_nodeK = np.ones(ARRAY_SIZE)
         self.rssi_data_samples_nodeL = np.ones(ARRAY_SIZE)
+        self.size_received_beacons = 0
         self.x0 = 0
         self.y0 = 0
         self.mobileNode1x = 0
         self.mobileNode1y = 0
+        self.receivedXPositions = np.ones(5)
+        self.receivedYPositions = np.ones(5)
+        self.receivedRSSI = np.ones(5)
+
         self.fig, self.ax = plt.subplots()
         img = plt.imread("floorplan.png")
         self.ax.imshow(img, extent=[0,40,0,21])
@@ -251,94 +257,147 @@ def update_data(BaseProcessing):
                     #output_converted = '{"Node": 52, "rssi":93}'
                     #output_converted = '{"Node": 52, "rssi":93, "ultra":53}'
 
-                    #print("OUtputCOnver" + output_converted)
+                    #format = 
                     outputs = output_converted[1:-1].replace(" ", "").split(",")
-                    #print(outputs)
-                    if(len(outputs) == 2):
-                        #print(outputs)
-                        node = outputs[0].split(":")[1]
-                        #print("Node:" + node + "!")
-                        rssi_db = outputs[1].split(":")[1]
-                        # rssi = 10**((-52-float(rssi_db))/ (10*4))
-                        rssi = 10**((-53-float(rssi_db))/ (10*2))
-                        BaseProcessing.lock_data.acquire()
+                    # 3 rssi readings
+                    if(len(outputs) == 4):
+                       
+                        mobile_node_number = int((outputs[0])[-1:])
+                        
+                        BaseProcessing.size_received_beacons =(len(outputs) -1)
+                        #nodeValues are "0-11"
+                        nodeInfo1 = outputs[1].split(":")
+                        nodeInfo2 = outputs[2].split(":")
+                        nodeInfo3 = outputs[3].split(":")
+                        
+                        nodeNumber1 = int(nodeInfo1[0])
+                        nodeNumber2 = int(nodeInfo2[0])
+                        nodeNumber3 = int(nodeInfo3[0])
+                        BaseProcessing.receivedXPositions[0] = self.beacon_xvals[nodeNumber1]
+                        BaseProcessing.receivedYPositions[0] = self.beacon_yvals[nodeNumber1]
+                        BaseProcessing.receivedXPositions[1] = self.beacon_xvals[nodeNumber2]
+                        BaseProcessing.receivedYPositions[1] = self.beacon_yvals[nodeNumber2]
+                        BaseProcessing.receivedXPositions[2] = self.beacon_xvals[nodeNumber3]
+                        BaseProcessing.receivedYPositions[2] = self.beacon_yvals[nodeNumber3]
+                        receivedRSSI1 = int(nodeInfo1[1])
+                        receivedRSSI2 = int(nodeInfo2[1])
+                        receivedRSSI3= int(nodeInfo3[1])
+                        BaseProcessing.receivedRSSI[0] = receivedRSSI1
+                        BaseProcessing.receivedRSSI[1] = receivedRSSI2
+                        BaseProcessing.receivedRSSI[2] = receivedRSSI3
 
-                        if(node =='0'):
-                            #print("RNODE_A")
-                            BaseProcessing.rssi_data_samples_nodeA[BaseProcessing.nodeA_index] = rssi
-                            BaseProcessing.nodeA_index = (BaseProcessing.nodeA_index + 1) % ARRAY_SIZE
-                            #print("INDEXA")
-                            #print(BaseProcessing.nodeA_index)
-                        elif(node =='1'):
-                            BaseProcessing.rssi_data_samples_nodeB[BaseProcessing.nodeB_index] = rssi
-                            BaseProcessing.nodeB_index = (BaseProcessing.nodeB_index + 1) % ARRAY_SIZE
-                        elif(node =='2'):
-                            BaseProcessing.rssi_data_samples_nodeC[BaseProcessing.nodeC_index] = rssi
-                            BaseProcessing.nodeC_index = (BaseProcessing.nodeC_index + 1) % ARRAY_SIZE
-                        elif(node =='3'):
-                            BaseProcessing.rssi_data_samples_nodeD[BaseProcessing.nodeD_index] = rssi
-                            BaseProcessing.nodeD_index = (BaseProcessing.nodeD_index + 1) % ARRAY_SIZE
-                        elif(node =='4'):
-                            BaseProcessing.rssi_data_samples_nodeE[BaseProcessing.nodeE_index] = rssi
-                            BaseProcessing.nodeE_index = (BaseProcessing.nodeE_index + 1) % ARRAY_SIZE
-                        elif(node =='5'):
-                            BaseProcessing.rssi_data_samples_nodeF[BaseProcessing.nodeF_index] = rssi
-                            BaseProcessing.nodeF_index = (BaseProcessing.nodeF_index + 1) % ARRAY_SIZE
-                        elif(node =='6'):
-                            BaseProcessing.rssi_data_samples_nodeG[BaseProcessing.nodeG_index] = rssi
-                            BaseProcessing.nodeG_index = (BaseProcessing.nodeG_index + 1) % ARRAY_SIZE
-                        elif(node =='7'):
-                            BaseProcessing.rssi_data_samples_nodeH[BaseProcessing.nodeH_index] = rssi
-                            BaseProcessing.nodeH_index = (BaseProcessing.nodeH_index + 1) % ARRAY_SIZE
-                        elif(node =='8'):
-                            BaseProcessing.rssi_data_samples_nodeI[BaseProcessing.nodeI_index] = rssi
-                            BaseProcessing.nodeI_index = (BaseProcessing.nodeI_index + 1) % ARRAY_SIZE
-                        elif(node =='9'):
-                            BaseProcessing.rssi_data_samples_nodeJ[BaseProcessing.nodeJ_index] = rssi
-                            BaseProcessing.nodeJ_index = (BaseProcessing.nodeJ_index + 1) % ARRAY_SIZE
-                        elif(node =='10'):
-                            BaseProcessing.rssi_data_samples_nodeK[BaseProcessing.nodeK_index] = rssi
-                            BaseProcessing.nodeK_index = (BaseProcessing.nodeK_index + 1) % ARRAY_SIZE
-                        elif(node =='11'):
-                            BaseProcessing.rssi_data_samples_nodeL[BaseProcessing.nodeL_index] = rssi
-                            BaseProcessing.nodeL_index = (BaseProcessing.nodeL_index + 1) % ARRAY_SIZE
-                        BaseProcessing.lock_data.release()
+                        
+                    if(len(outputs) == 5):
+                        
+                        mobile_node_number = int((outputs[0])[-1:])
+                        
+                        BaseProcessing.size_received_beacons =(len(outputs) -1)
+                        #nodeValues are "0-11"
+                        nodeInfo1 = outputs[1].split(":")
+                        nodeInfo2 = outputs[2].split(":")
+                        nodeInfo3 = outputs[3].split(":")
+                        nodeInfo4 = outputs[4].split(":")
+                        nodeNumber1 = int(nodeInfo1[0])
+                        nodeNumber2 = int(nodeInfo2[0])
+                        nodeNumber3 = int(nodeInfo3[0])
+                        nodeNumber4 = int(nodeInfo4[0])
+                        BaseProcessing.receivedXPositions[0] = self.beacon_xvals[nodeNumber1]
+                        BaseProcessing.receivedYPositions[0] = self.beacon_yvals[nodeNumber1]
+                        BaseProcessing.receivedXPositions[1] = self.beacon_xvals[nodeNumber2]
+                        BaseProcessing.receivedYPositions[1] = self.beacon_yvals[nodeNumber2]
+                        BaseProcessing.receivedXPositions[2] = self.beacon_xvals[nodeNumber3]
+                        BaseProcessing.receivedYPositions[2] = self.beacon_yvals[nodeNumber3]
+                        BaseProcessing.receivedXPositions[3] = self.beacon_xvals[nodeNumber4]
+                        BaseProcessing.receivedYPositions[3] = self.beacon_yvals[nodeNumber4]
+                        receivedRSSI1 = int(nodeInfo1[1])
+                        receivedRSSI2 = int(nodeInfo2[1])
+                        receivedRSSI3= int(nodeInfo3[1])
+                        receivedRSSI4= int(nodeInfo4[1])
+                        BaseProcessing.receivedRSSI[0] = receivedRSSI1
+                        BaseProcessing.receivedRSSI[1] = receivedRSSI2
+                        BaseProcessing.receivedRSSI[2] = receivedRSSI3
+                        BaseProcessing.receivedRSSI[3] = receivedRSSI4
+
+
+                        
+                    if(len(outputs) == 6):
+                        
+                        mobile_node_number = int((outputs[0])[-1:])
+                        
+                        BaseProcessing.size_received_beacons =(len(outputs) -1)
+                        #nodeValues are "0-11"
+                        nodeInfo1 = outputs[1].split(":")
+                        nodeInfo2 = outputs[2].split(":")
+                        nodeInfo3 = outputs[3].split(":")
+                        nodeInfo4 = outputs[4].split(":")
+                        nodeInfo5 = outputs[5].split(":")
+                        nodeNumber1 = int(nodeInfo1[0])
+                        nodeNumber2 = int(nodeInfo2[0])
+                        nodeNumber3 = int(nodeInfo3[0])
+                        nodeNumber4 = int(nodeInfo4[0])
+                        nodeNumber5 = int(nodeInfo5[0])
+                        BaseProcessing.receivedXPositions[0] = self.beacon_xvals[nodeNumber1]
+                        BaseProcessing.receivedYPositions[0] = self.beacon_yvals[nodeNumber1]
+                        BaseProcessing.receivedXPositions[1] = self.beacon_xvals[nodeNumber2]
+                        BaseProcessing.receivedYPositions[1] = self.beacon_yvals[nodeNumber2]
+                        BaseProcessing.receivedXPositions[2] = self.beacon_xvals[nodeNumber3]
+                        BaseProcessing.receivedYPositions[2] = self.beacon_yvals[nodeNumber3]
+                        BaseProcessing.receivedXPositions[3] = self.beacon_xvals[nodeNumber4]
+                        BaseProcessing.receivedYPositions[3] = self.beacon_yvals[nodeNumber4]
+                        BaseProcessing.receivedXPositions[4] = self.beacon_xvals[nodeNumber5]
+                        BaseProcessing.receivedYPositions[4] = self.beacon_yvals[nodeNumber5]
+                        receivedRSSI1 = int(nodeInfo1[1])
+                        receivedRSSI2 = int(nodeInfo2[1])
+                        receivedRSSI3= int(nodeInfo3[1])
+                        receivedRSSI4= int(nodeInfo4[1])
+                        receivedRSSI5= int(nodeInfo5[1])
+                        BaseProcessing.receivedRSSI[0] = receivedRSSI1
+                        BaseProcessing.receivedRSSI[1] = receivedRSSI2
+                        BaseProcessing.receivedRSSI[2] = receivedRSSI3
+                        BaseProcessing.receivedRSSI[3] = receivedRSSI4
+                        BaseProcessing.receivedRSSI[4] = receivedRSSI5
+                            
+
+               
+
+
+
+
 
 
                     
-                    if(len(outputs) == 3):
-                        node = outputs[0].split(":")[1]
-                        time1 = datetime.utcnow()
+                    # if(len(outputs) == 3):
+                    #     node = outputs[0].split(":")[1]
+                    #     time1 = datetime.utcnow()
 
-                        time2 = (calendar.timegm(time1.utctimetuple()) * (10**9))
-                        strtime = str(time2)
-                        rssi = outputs[1].split(":")[1]
-                        ultra = outputs[2].split(":")[1]
-                        if(node =='12'):
+                    #     time2 = (calendar.timegm(time1.utctimetuple()) * (10**9))
+                    #     strtime = str(time2)
+                    #     rssi = outputs[1].split(":")[1]
+                    #     ultra = outputs[2].split(":")[1]
+                    #     if(node =='12'):
                             
-                            result_rssi = ("StaticNodeA" + (" RSSI=\"%s\" " %rssi) + strtime + '\n')
-                            BaseProcessing.writeFile.write(result_rssi)
-                            result_ultra = ("StaticNodeA" + (" Ultrasound=\"%s\" " %ultra) + strtime + '\n')
-                            BaseProcessing.writeFile.write(result_ultra)
-                        elif(node =='13'):
-                            result_rssi = ("StaticNodeB" + (" RSSI=\"%s\" " %rssi) + strtime + '\n')
-                            BaseProcessing.writeFile.write(result_rssi)
-                            result_ultra = ("StaticNodeB" + (" Ultrasound=\"%s\" " %ultra) + strtime + '\n')
-                            BaseProcessing.writeFile.write(result_ultra)
-                        elif(node =='14'):
-                            result_rssi = ("StaticNodeC" + (" RSSI=\"%s\" " %rssi) + strtime + '\n')
-                            BaseProcessing.writeFile.write(result_rssi)
-                            result_ultra = ("StaticNodeC" + (" Ultrasound=\"%s\" " %ultra) + strtime + '\n')
-                            BaseProcessing.writeFile.write(result_ultra)
-                        elif(node =='15'):
-                            result_rssi = ("StaticNodeD" + (" RSSI=\"%s\" " %rssi) + strtime + '\n')
-                            BaseProcessing.writeFile.write(result_rssi)
-                            result_ultra = ("StaticNodeD" + (" Ultrasound=\"%s\" " %ultra) + strtime + '\n')
-                            BaseProcessing.writeFile.write(result_ultra)
+                    #         result_rssi = ("StaticNodeA" + (" RSSI=\"%s\" " %rssi) + strtime + '\n')
+                    #         BaseProcessing.writeFile.write(result_rssi)
+                    #         result_ultra = ("StaticNodeA" + (" Ultrasound=\"%s\" " %ultra) + strtime + '\n')
+                    #         BaseProcessing.writeFile.write(result_ultra)
+                    #     elif(node =='13'):
+                    #         result_rssi = ("StaticNodeB" + (" RSSI=\"%s\" " %rssi) + strtime + '\n')
+                    #         BaseProcessing.writeFile.write(result_rssi)
+                    #         result_ultra = ("StaticNodeB" + (" Ultrasound=\"%s\" " %ultra) + strtime + '\n')
+                    #         BaseProcessing.writeFile.write(result_ultra)
+                    #     elif(node =='14'):
+                    #         result_rssi = ("StaticNodeC" + (" RSSI=\"%s\" " %rssi) + strtime + '\n')
+                    #         BaseProcessing.writeFile.write(result_rssi)
+                    #         result_ultra = ("StaticNodeC" + (" Ultrasound=\"%s\" " %ultra) + strtime + '\n')
+                    #         BaseProcessing.writeFile.write(result_ultra)
+                    #     elif(node =='15'):
+                    #         result_rssi = ("StaticNodeD" + (" RSSI=\"%s\" " %rssi) + strtime + '\n')
+                    #         BaseProcessing.writeFile.write(result_rssi)
+                    #         result_ultra = ("StaticNodeD" + (" Ultrasound=\"%s\" " %ultra) + strtime + '\n')
+                    #         BaseProcessing.writeFile.write(result_ultra)
                         
-                        BaseProcessing.writeFile.flush()
-                    #print(node)
-                    #print(rssi)
+                    #     BaseProcessing.writeFile.flush()
+
 
 
 
