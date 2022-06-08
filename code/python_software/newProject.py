@@ -170,7 +170,8 @@ class BaseProcessing:
 
                         if((self.mobilenode1_sample_index+ 1) == self.knn_samplesize):
                             self.enough_mobile1_samples = 1
-                        self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) % self.knn_samplesize
+                            self.mobilenode1_sample_index = 0
+                        self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) 
                 else: 
                     if(self.enough_mobile2_samples):
                         avg_test_x = np.mean(self.mobilenode2x_sample_array)
@@ -198,7 +199,8 @@ class BaseProcessing:
 
                         if((self.mobilenode2_sample_index+ 1) == self.knn_samplesize):
                             self.enough_mobile2_samples = 1
-                        self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) % self.knn_samplesize
+                            self.mobilenode2_sample_index = 0
+                        self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) 
             except Exception:
                 print("KNN Exception")
 
@@ -291,7 +293,8 @@ class BaseProcessing:
 
                         if((self.mobilenode1_sample_index+ 1) == self.knn_samplesize):
                             self.enough_mobile1_samples = 1
-                        self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) % self.knn_samplesize
+                            self.mobilenode1_sample_index = 0
+                        self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) 
                 else: 
                     if(self.enough_mobile2_samples):
                         avg_test_x = np.mean(self.mobilenode2x_sample_array)
@@ -319,7 +322,8 @@ class BaseProcessing:
 
                         if((self.mobilenode2_sample_index+ 1) == self.knn_samplesize):
                             self.enough_mobile2_samples = 1
-                        self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) % self.knn_samplesize
+                            self.mobilenode2_sample_index = 0
+                        self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) 
             except Exception:
                 print("KNN Exception")
             tempIndex = 7
@@ -420,7 +424,8 @@ class BaseProcessing:
 
                         if((self.mobilenode1_sample_index+ 1) == self.knn_samplesize):
                             self.enough_mobile1_samples = 1
-                        self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) % self.knn_samplesize
+                            self.mobilenode1_sample_index = 0
+                        self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) 
                 else: 
                     if(self.enough_mobile2_samples):
                         avg_test_x = np.mean(self.mobilenode2x_sample_array)
@@ -448,7 +453,8 @@ class BaseProcessing:
 
                         if((self.mobilenode2_sample_index+ 1) == self.knn_samplesize):
                             self.enough_mobile2_samples = 1
-                        self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) % self.knn_samplesize
+                            self.mobilenode2_sample_index = 0
+                        self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) 
             except Exception:
                 print("KNN Exception")
             tempIndex = 7
