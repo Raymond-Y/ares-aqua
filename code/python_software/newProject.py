@@ -12,6 +12,8 @@ import influxdb_client, os, time
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 import calendar
+import pandas as pd
+from sklearn.neighbors import KNeighborsClassifier
 ARRAY_SIZE = 5
 
 class BaseProcessing:
@@ -35,6 +37,14 @@ class BaseProcessing:
         self.mobileNode1y = 0
         self.mobileNode2x = 0
         self.mobileNode2y = 0
+
+        self.mobileNode1x_knn = 0
+        self.mobileNode1y_knn = 0
+        self.mobileNode2x_knn = 0
+        self.mobileNode2y_knn = 0
+
+
+
         # x and y positions of nodes that have sent rssi data
         self.receivedXPositions = np.ones(5)
         self.receivedYPositions = np.ones(5)
@@ -48,12 +58,20 @@ class BaseProcessing:
 
         self.mobilenode1, = self.ax.plot([],[],'go', markersize='12')
         self.mobilenode2, = self.ax.plot([],[],'ro', markersize='12')
+        self.mobilenode1_knn, = self.ax.plot([],[],'gD', markersize='12')
+        self.mobilenode2_knn, = self.ax.plot([],[],'rD', markersize='12')
         
         self.ax.axis([0, 32, 0, 21])
         self.setup_beacons()
         self.ax.plot(self.beacon_xvals,self.beacon_yvals,'bo', markersize='4')
         self.writeFile = open('resultsStatic.csv','w')
         self.tempcount =0
+        self.names = ['X_calculated', 'Y_calculated', "actual_values"]
+        self.dataset = pd.read_csv('./TrainingData.csv', names=names)
+        self.trainingDataset = dataset.iloc[1:, 1:].values
+        self.classifierDataset = dataset.iloc[1:, 0].values
+        self.classifier = KNeighborsClassifier(n_neighbors=3)
+        self.classifier.fit(X, y)
 
     #Get beacon x and y positions from the csv
     def setup_beacons(self):
@@ -71,6 +89,9 @@ class BaseProcessing:
         self.lock_rssi_coords.acquire()
         self.mobilenode1.set_data(self.mobileNode1x, self.mobileNode1y)
         self.mobilenode2.set_data(self.mobileNode2x, self.mobileNode2y)
+        self.mobilenode1_knn.set_data(self.mobileNode1x_knn, self.mobileNode1y_knn)
+        self.mobilenode2_knn.set_data(self.mobileNode2x_knn, self.mobileNode2y_knn)
+
         self.fig.suptitle(" MobileNode1:(%f,%f), MobileNode2:(%f,%f)" %(self.mobileNode1x, self.mobileNode1y, self.mobileNode2x, self.mobileNode2y))
 
         self.lock_rssi_coords.release()
@@ -109,6 +130,22 @@ class BaseProcessing:
             A = np.vstack([Ax_array, Ay_array]).T
        
             x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
+            # Determine KNN 
+            try:
+                predict= self.classifier.predict([[x0,y0]])[0]
+                predict_split = predict.split("-")
+                knn_x = float(predict_split[0])
+                knn_y = float(predict_split[1])
+                if(self.receivedMobileNodeNumber == 1):
+                    self.mobileNode1x_knn = knn_x
+                    self.mobileNode1y_knn = knn_y
+                else:
+                    self.mobileNode2x_knn = knn_x
+                    self.mobileNode2y_knn = knn_y
+                
+
+            except Exception:
+                print("KNN Exception")
 
             tempIndex = 7
             for value in range(3):
@@ -126,7 +163,7 @@ class BaseProcessing:
                 y0 = smallY + nodeY
 
 
-            #ADD KNN
+            
 
             if (x0 < 2):
                 x0 = 2
@@ -171,6 +208,22 @@ class BaseProcessing:
        
             x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
 
+            # Determine KNN 
+            try:
+                predict= self.classifier.predict([[x0,y0]])[0]
+                predict_split = predict.split("-")
+                knn_x = float(predict_split[0])
+                knn_y = float(predict_split[1])
+                if(self.receivedMobileNodeNumber == 1):
+                    self.mobileNode1x_knn = knn_x
+                    self.mobileNode1y_knn = knn_y
+                else:
+                    self.mobileNode2x_knn = knn_x
+                    self.mobileNode2y_knn = knn_y
+                
+
+            except Exception:
+                print("KNN Exception")
             tempIndex = 7
             for value in range(4):
                 if(self.receivedRSSI[value] < 0.32):
@@ -241,7 +294,22 @@ class BaseProcessing:
             A = np.vstack([Ax_array, Ay_array]).T
        
             x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
+            # Determine KNN 
+            try:
+                predict= self.classifier.predict([[x0,y0]])[0]
+                predict_split = predict.split("-")
+                knn_x = float(predict_split[0])
+                knn_y = float(predict_split[1])
+                if(self.receivedMobileNodeNumber == 1):
+                    self.mobileNode1x_knn = knn_x
+                    self.mobileNode1y_knn = knn_y
+                else:
+                    self.mobileNode2x_knn = knn_x
+                    self.mobileNode2y_knn = knn_y
+                
 
+            except Exception:
+                print("KNN Exception")
             tempIndex = 7
             for value in range(5):
                 if(self.receivedRSSI[value] < 0.32):
