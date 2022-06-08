@@ -55,3 +55,4 @@ data_frame = query_api.query_data_frame('from(bucket:"Test2") '
 
 print(data_frame.to_string())
 print(type(data_frame))
+data_frame.to_csv('out.csv')
