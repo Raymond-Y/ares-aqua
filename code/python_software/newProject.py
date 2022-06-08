@@ -5,6 +5,7 @@ import numpy as np
 import csv
 import matplotlib.pyplot as plt
 from matplotlib import animation
+import math
 import random
 from datetime import datetime
 import influxdb_client, os, time
@@ -108,7 +109,23 @@ class BaseProcessing:
             A = np.vstack([Ax_array, Ay_array]).T
        
             x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
-            
+
+            tempIndex = 7
+            for value in range(3):
+                if(self.receivedRSSI[value] < 0.32):
+                    tempIndex = value
+
+            if (tempIndex != 7):
+                nodeX = self.receivedXPositions[tempIndex]
+                nodeY = self.receivedYPositions[tempIndex]
+                deltaX = abs(x0 - nodeX)
+                deltaY = abs(y0 - nodeY)
+                smallX = deltaX * 0.5 / math.sqrt((x0 - nodeX)**2 + (y0 - nodeY)**2)
+                smallY = deltaX * 0.5 / math.sqrt((x0 - nodeX)**2 + (y0 - nodeY)**2)
+                x0 = smallX + nodeX
+                y0 = smallY + nodeY
+
+
             #ADD KNN
 
             if (x0 < 2):
@@ -153,6 +170,22 @@ class BaseProcessing:
             A = np.vstack([Ax_array, Ay_array]).T
        
             x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
+
+            tempIndex = 7
+            for value in range(4):
+                if(self.receivedRSSI[value] < 0.32):
+                    tempIndex = value
+                    print("entered")
+
+            if (tempIndex != 7):
+                nodeX = self.receivedXPositions[tempIndex]
+                nodeY = self.receivedYPositions[tempIndex]
+                deltaX = abs(x0 - nodeX)
+                deltaY = abs(y0 - nodeY)
+                smallX = deltaX * 0.5 / math.sqrt(((x0 - nodeX)**2) + ((y0 - nodeY)**2))
+                smallY = deltaX * 0.5 / math.sqrt(((x0 - nodeX)**2) + ((y0 - nodeY)**2))
+                x0 = smallX + nodeX
+                y0 = smallY + nodeY
             #ADD KNN
 
             if (x0 < 2):
@@ -208,6 +241,21 @@ class BaseProcessing:
             A = np.vstack([Ax_array, Ay_array]).T
        
             x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
+
+            tempIndex = 7
+            for value in range(5):
+                if(self.receivedRSSI[value] < 0.32):
+                    tempIndex = value
+
+            if (tempIndex != 7):
+                nodeX = self.receivedXPositions[tempIndex]
+                nodeY = self.receivedYPositions[tempIndex]
+                deltaX = abs(x0 - nodeX)
+                deltaY = abs(y0 - nodeY)
+                smallX = deltaX * 0.5 / math.sqrt((x0 - nodeX)**2 + (y0 - nodeY)**2)
+                smallY = deltaX * 0.5 / math.sqrt((x0 - nodeX)**2 + (y0 - nodeY)**2)
+                x0 = smallX + nodeX
+                y0 = smallY + nodeY
             #ADD KNN
 
             if (x0 < 2):
@@ -256,7 +304,7 @@ def update_data(BaseProcessing):
                 
                 output_converted = ((str(output, 'utf-8'))[:-1])
                 #FIXME REMOVE WHEN NOT TESTING
-                #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,12:-61,}'
+                #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,12:-59,}'
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,}'
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-60}'
                 if len(output_converted) > 1:
@@ -292,9 +340,9 @@ def update_data(BaseProcessing):
                         receivedRSSI2 = (nodeInfo2[1])
                         receivedRSSI3= (nodeInfo3[1])
                         #convert rssi db to distance
-                        receivedRSSI_actual1 = 10**((-61-float(receivedRSSI1))/ (10*2))
-                        receivedRSSI_actual2 = 10**((-59-float(receivedRSSI2))/ (10*2))
-                        receivedRSSI_actual3 = 10**((-59-float(receivedRSSI3))/ (10*2))
+                        receivedRSSI_actual1 = 10**((-55-float(receivedRSSI1))/ (10*2))
+                        receivedRSSI_actual2 = 10**((-55-float(receivedRSSI2))/ (10*2))
+                        receivedRSSI_actual3 = 10**((-55-float(receivedRSSI3))/ (10*2))
 
                         
                         BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
@@ -332,10 +380,10 @@ def update_data(BaseProcessing):
                         receivedRSSI3= (nodeInfo3[1])
                         receivedRSSI4= (nodeInfo4[1])
                         # convert rssi db to distance
-                        receivedRSSI_actual1 = 10**((-59-float(receivedRSSI1))/ (10*2))
-                        receivedRSSI_actual2 = 10**((-59-float(receivedRSSI2))/ (10*2))
-                        receivedRSSI_actual3 = 10**((-59-float(receivedRSSI3))/ (10*2))
-                        receivedRSSI_actual4 = 10**((-59-float(receivedRSSI4))/ (10*2))
+                        receivedRSSI_actual1 = 10**((-55-float(receivedRSSI1))/ (10*2))
+                        receivedRSSI_actual2 = 10**((-55-float(receivedRSSI2))/ (10*2))
+                        receivedRSSI_actual3 = 10**((-55-float(receivedRSSI3))/ (10*2))
+                        receivedRSSI_actual4 = 10**((-55-float(receivedRSSI4))/ (10*2))
 
                         BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
                         BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
@@ -379,11 +427,12 @@ def update_data(BaseProcessing):
                         receivedRSSI4= (nodeInfo4[1])
                         receivedRSSI5= (nodeInfo5[1])
                         #convert rssi db to distance
-                        receivedRSSI_actual1 = 10**((-59-float(receivedRSSI1))/ (10*2))
-                        receivedRSSI_actual2 = 10**((-59-float(receivedRSSI2))/ (10*2))
-                        receivedRSSI_actual3 = 10**((-59-float(receivedRSSI3))/ (10*2))
-                        receivedRSSI_actual4 = 10**((-59-float(receivedRSSI4))/ (10*2))
-                        receivedRSSI_actual5 = 10**((-59-float(receivedRSSI5))/ (10*2))
+                        receivedRSSI_actual1 = 10**((-55-float(receivedRSSI1))/ (10*2))
+                        receivedRSSI_actual2 = 10**((-55-float(receivedRSSI2))/ (10*2))
+                        receivedRSSI_actual3 = 10**((-55-float(receivedRSSI3))/ (10*2))
+                        receivedRSSI_actual4 = 10**((-55-float(receivedRSSI4))/ (10*2))
+                        receivedRSSI_actual5 = 10**((-55-float(receivedRSSI5))/ (10*2))
+
 
                         BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
                         BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
