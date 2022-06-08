@@ -2,12 +2,10 @@ NodeA(xy),7.4,17.2
 NodeB(x-y),2.44,16.31
 NodeD(x-y),1.77,10.85
 NodeE(x-y),6.73,8.7
-NodeF(x-y),11.5,9.6
+NodeF(x-y),14.6,11.1, 
 NodeG(x-y),11.9,4.2
 NodeH(x-y),17.15,4
-NodeI(x-y),15.6,9.2
-NodeL(x-y),15.6,11.5
 NodeW(x-y),6.3,12.4
 NodeX(x-y),8.06,11.35
-NodeY(x-y),14.6,11.1
-NodeZ(x-y),14.4,6.3
+NodeY(x-y),11.5,9.6
+NodeZ(x-y),15.6,9.2

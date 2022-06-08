@@ -116,9 +116,9 @@ class BaseProcessing:
     def calculate_positions(self):
         self.lock_rssi_coords.acquire()
         #self.lock_data.acquire()
-        print("ENTER CALCULATE POSITIONS")
-        self.tempcount+= 1
-        print("Self count%i", self.tempcount)
+        #print("ENTER CALCULATE POSITIONS")
+        #self.tempcount+= 1
+        #print("Self count%i", self.tempcount)
         if (self.size_received_beacons == 3):
             r1 = self.receivedRSSI[0]
             r2 = self.receivedRSSI[1]
@@ -286,12 +286,12 @@ def update_data(BaseProcessing):
                 pass
         else:
             try:
-                print("trying to read")
+                #print("trying to read")
                 output = BaseProcessing.serial_port.readline()
                 #print(output)
                 output_converted = ((str(output, 'utf-8'))[:-1])
                 #FIXME REMOVE WHEN NOT TESTING
-                output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,12:-59,}'
+                #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,12:-59,}'
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,}'
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-60}'
                 if len(output_converted) > 1:
@@ -302,8 +302,8 @@ def update_data(BaseProcessing):
                     #output_converted = '{"Mobile1, 2:-75, 4:-69, 5:-67, 10:-73,12:-59,'
                     #format = 
                     outputs = output_converted[1:-2].replace(" ", "").split(",")
-                    print(outputs)
-                    print(len(outputs))
+                    #print(outputs)
+                    #print(len(outputs))
                     # 3 rssi readings
                     #BaseProcessing.lock_data.acquire()
                     if(len(outputs) == 4):
