@@ -67,11 +67,11 @@ class BaseProcessing:
         self.writeFile = open('resultsStatic.csv','w')
         self.tempcount =0
         self.names = ['X_calculated', 'Y_calculated', "actual_values"]
-        self.dataset = pd.read_csv('./TrainingData.csv', names=names)
-        self.trainingDataset = dataset.iloc[1:, 1:].values
-        self.classifierDataset = dataset.iloc[1:, 0].values
+        self.dataset = pd.read_csv('./TrainingData.csv', names=self.names)
+        self.trainingDataset = self.dataset.iloc[1:, 1:].values
+        self.classifierDataset = self.dataset.iloc[1:, 0].values
         self.classifier = KNeighborsClassifier(n_neighbors=3)
-        self.classifier.fit(X, y)
+        self.classifier.fit(self.trainingDataset, self.classifierDataset)
 
     #Get beacon x and y positions from the csv
     def setup_beacons(self):
