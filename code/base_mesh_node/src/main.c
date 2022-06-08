@@ -59,6 +59,8 @@ static uint32_t btn_last_time[4] = { 0,0,0,0};
 
 static struct gpio_callback gpio_btn1_cb;
 
+static struct k_sem recvMobileMsg;
+
 // GPIO for LED 0
 /*
  * The led0 devicetree alias is optional. If present, we'll use it
@@ -69,9 +71,7 @@ static struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios,
 
 // for use with k_work_submit which we use to handle button presses in a background thread to avoid holding onto an IRQ for too long
 static struct k_work button1_work;
-// static struct k_work button2_work;
-// static struct k_work button3_work;
-// static struct k_work button4_work;
+
 
 static uint8_t dev_uuid[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00 };
 
@@ -195,7 +195,9 @@ static void generic_onoff_status(struct bt_mesh_model *model,struct bt_mesh_msg_
 #define BT_MESH_MODEL_OP_GENERIC_ONOFF_STATUS     BT_MESH_MODEL_OP_2(0x82, 0x04)
 
 // BEACON data receive (MOBILE TO BASE)
-#define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK	BT_MESH_MODEL_OP_2(0x82, 0x40)
+#define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK	BT_MESH_MODEL_OP_2(0x82, 0x40) // Mobile_A
+
+#define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2	BT_MESH_MODEL_OP_2(0x82, 0x41) // Mobile_B
 
 
 static const struct bt_mesh_model_op gen_onoff_cli_op[] = {
@@ -203,45 +205,46 @@ static const struct bt_mesh_model_op gen_onoff_cli_op[] = {
 		BT_MESH_MODEL_OP_END,
 };
 
-static void analyse_received_data(uint16_t* msg_rssi_value, uint16_t* msg_rssi_node) {
+static void analyse_received_data(int8_t* msg_rssi_value, int8_t* msg_rssi_node) {
 	for (int i = 0; i < 5; i++) {
-		if (msg_rssi_node[i] == 0x0000) {
-			printk("0:%d,", (int8_t) msg_rssi_value[i]); // 4011-A
-		} else if (msg_rssi_node[i] == 0x0001) {
-			printk("1:%d,", (int8_t) msg_rssi_value[i]); // 4011-B
-		} else if (msg_rssi_node[i] == 0x0003) {
-			printk("2:%d,", (int8_t) msg_rssi_value[i]); // 4011-D
-		} else if (msg_rssi_node[i] == 0x0004) {
-			printk("3:%d,", (int8_t) msg_rssi_value[i]); // 4011-E
-		} else if (msg_rssi_node[i] == 0x0005) {
-			printk("4:%d,", (int8_t) msg_rssi_value[i]); // 4011-F
-		} else if (msg_rssi_node[i] == 0x0006) {
-			printk("5:%d,", (int8_t) msg_rssi_value[i]); // 4011-G
-		} else if (msg_rssi_node[i] == 0x0007) {
-			printk("6:%d,", (int8_t) msg_rssi_value[i]); // 4011-H
-		} else if (msg_rssi_node[i] == 0x0008) {
-			printk("7:%d,", (int8_t) msg_rssi_value[i]); // 4011-I
-		} else if (msg_rssi_node[i] == 0x0009) {
-			printk("8:%d,", (int8_t) msg_rssi_value[i]); // 4011-L
-		} else if (msg_rssi_node[i] == 0x000A) {
-			printk("9:%d,", (int8_t) msg_rssi_value[i]); // Relay-W
-		} else if (msg_rssi_node[i] == 0x000B) {
-			printk("10:%d,", (int8_t) msg_rssi_value[i]); // Relay-X
-		} else if (msg_rssi_node[i] == 0x000C) {
-			printk("11:%d,", (int8_t) msg_rssi_value[i]); // Relay-Y
-		} else if (msg_rssi_node[i] == 0x000D) {
-			printk("12:%d,", (int8_t) msg_rssi_value[i]); // Relay-Z
-		}
+		if (msg_rssi_node[i] == 0x00) {
+			printk("0:%d,", msg_rssi_value[i]); // 4011-A
+		} else if (msg_rssi_node[i] == 0x01) {
+			printk("1:%d,", msg_rssi_value[i]); // 4011-B
+		} else if (msg_rssi_node[i] == 0x03) {
+			printk("2:%d,", msg_rssi_value[i]); // 4011-D
+		} else if (msg_rssi_node[i] == 0x04) {
+			printk("3:%d,", msg_rssi_value[i]); // 4011-E
+		} else if (msg_rssi_node[i] == 0x05) {
+			printk("4:%d,", msg_rssi_value[i]); // 4011-F
+		} else if (msg_rssi_node[i] == 0x06) {
+			printk("5:%d,", msg_rssi_value[i]); // 4011-G
+		} else if (msg_rssi_node[i] == 0x07) {
+			printk("6:%d,", msg_rssi_value[i]); // 4011-H
+		} else if (msg_rssi_node[i] == 0x08) {
+			printk("7:%d,", msg_rssi_value[i]); // 4011-I
+		} else if (msg_rssi_node[i] == 0x09) {
+			printk("8:%d,", msg_rssi_value[i]); // 4011-L
+		} else if (msg_rssi_node[i] == 0x0A) {
+			printk("9:%d,", msg_rssi_value[i]); // Relay-W
+		} else if (msg_rssi_node[i] == 0x0B) {
+			printk("10:%d,", msg_rssi_value[i]); // Relay-X
+		} else if (msg_rssi_node[i] == 0x0C) {
+			printk("11:%d,", msg_rssi_value[i]); // Relay-Y
+		} else if (msg_rssi_node[i] == 0x0D) {
+			printk("12:%d,", msg_rssi_value[i]); // Relay-Z
+		} else if (msg_rssi_node[i] == 0x0E) {
+			printk("X:%d,", msg_rssi_value[i]); // missed data
+		} 
 	}
 	printk("}\n");
 }
 
 static void get_data_from_mobile(struct bt_mesh_model* model, struct bt_mesh_msg_ctx* ctx, struct net_buf_simple* buf) {
-	uint16_t msg_rssi_value[5];
-	uint16_t msg_rssi_node[5];
-	// reads data backwards (value then node)
-	// {node, value}
-	// printk("addr: %d\n", ctx->addr);
+
+	int8_t msg_rssi_value[5];
+	int8_t msg_rssi_node[5];
+
 	if (ctx->addr == 4) {
 		//mobile node 1
 		printk("{Mobile1, ");
@@ -250,8 +253,8 @@ static void get_data_from_mobile(struct bt_mesh_model* model, struct bt_mesh_msg
 		printk("{Mobile2, ");
 	}
 	for (int i = 0; i < 5; i++) {
-		msg_rssi_value[i] = net_buf_simple_pull_le16(buf);
-		msg_rssi_node[i] = net_buf_simple_pull_le16(buf);
+		msg_rssi_value[i] = net_buf_simple_pull_u8(buf);
+		msg_rssi_node[i] = net_buf_simple_pull_u8(buf);
 
 	}
 	// printk("rssi YAY: %d\n", ctx->recv_rssi);
@@ -265,39 +268,24 @@ static void get_data_from_mobile(struct bt_mesh_model* model, struct bt_mesh_msg
 }
 
 static void get_data_from_mobile_unack(struct bt_mesh_model *model,struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf) {
-	// printk("get_data_from_mobile_unack\n");
+
+	k_sem_take(&recvMobileMsg, K_FOREVER);
 	get_data_from_mobile(model, ctx, buf);
+	k_sem_give(&recvMobileMsg);
 }
 
 static const struct bt_mesh_model_op rssi_data_from_mobile_op[] = {
-	{BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK, 1 + 4*5, get_data_from_mobile_unack},
+	{BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK, 1 + 2*5, get_data_from_mobile_unack},
 	BT_MESH_MODEL_OP_END,
 };
 
-//was 2 + 4
-BT_MESH_MODEL_PUB_DEFINE(rssi_data_from_mobile_pub, NULL, 2 + 4*5);
+static const struct bt_mesh_model_op rssi_data_from_mobile_op_2[] = {
+	{BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2, 1 + 2*5, get_data_from_mobile_unack},
+	BT_MESH_MODEL_OP_END,
+};
 
-// -------------------------------------------------------------------------------------------------------
-// Light HSL Client Model
-// ----------------------
-
-/*
-BLACK   : HSL(    0,    0,    0) = RGB(0,0,0)
-
-RED     : HSL(    0,65535,32767) = RGB(255,0,0)
-
-GREEN   : HSL(21845,65535,32767) = RGB(0,255,0)
-
-BLUE    : HSL(43690,65535,32767) = RGB(0,0,255)
-
-YELLOW  : HSL(10922,65535,32767) = RGB(255,255,0)
-
-MAGENTA : HSL(54613,65535,32767) = RGB(255,0,255)
-
-CYAN    : HSL(32768,65535,32767) = RGB(0,255,255)
-
-WHITE   : HSL(    0,    0,65535) = RGB(255,255,255)
-*/
+BT_MESH_MODEL_PUB_DEFINE(rssi_data_from_mobile_pub, NULL, 2 + 2*5);
+BT_MESH_MODEL_PUB_DEFINE(rssi_data_from_mobile_pub_2, NULL, 2 + 2*5);
 
 #define NUMBER_OF_COLOURS 8
 
@@ -330,6 +318,7 @@ static struct bt_mesh_model sig_models[] = {
 				BT_MESH_MODEL(BT_MESH_MODEL_ID_GEN_ONOFF_CLI, gen_onoff_cli_op, &gen_onoff_cli, &onoff[0]),
 				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_HSL_CLI, NULL, &light_hsl_cli, &hsl[0]),
 				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_SRV, rssi_data_from_mobile_op, &rssi_data_from_mobile_pub, NULL),
+				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_LC_SRV, rssi_data_from_mobile_op_2, &rssi_data_from_mobile_pub_2, NULL),
 };
 
 // node contains elements. Note that BT_MESH_MODEL_NONE means "none of this type" and here means "no vendor models"
@@ -609,14 +598,12 @@ void main(void)
 	if (usb_enable(NULL)) {
 		return;
 	}
-	printk("switch\n");
-	// while (1) {
-	// 	printk("hello\n");
-	// 	k_msleep(1000);
-	// }
 
 	onoff_tid = 0;
 	hsl_tid = 0;
+
+	k_sem_init(&recvMobileMsg, 0, 1);
+	k_sem_give(&recvMobileMsg);	
 
 	configureButtons();
 	configureLED();

@@ -18,7 +18,7 @@
 #include "s4589514_pb.h"
 
 #define BLE_MAX_NAME_LEN 	50
-#define NUM_BEACONS 		13 // 9 iBeacons + 4 mesh relay beacons (todo)
+#define NUM_BEACONS 		13
 
 // GPIO for the Thingy LED controller
 const struct device *led_ctrlr;
@@ -80,30 +80,30 @@ const char *nodeNames[] = {
     // "4011-J",
     // "4011-K",
     "4011-L", // weak signal
-    "Relay_W", //TODO: change static node names
+    "Relay_W",
     "Relay_X",
     "Relay_Y",
     "Relay_Z"
 };
 
-uint16_t beaconRSSI[NUM_BEACONS][2] = {
-	{ 0x0000, 0x0010 }, // iBeacon A
-	{ 0x0001, 0x0020 }, // iBeacon B
+int8_t beaconRSSI[NUM_BEACONS][2] = {
+	{ 0x00, 0x10 }, // iBeacon A
+	{ 0x01, 0x20 }, // iBeacon B
 	// { 0x0002, 0x0030 }, // iBeacon C
-	{ 0x0003, 0x0040 }, // iBeacon D
-	{ 0x0004, 0x0050 }, // iBeacon E
-	{ 0x0005, 0x0060 }, // iBeacon F
-	{ 0x0006, 0x0070 }, // iBeacon G
-	{ 0x0007, 0x0080 }, // iBeacon H
-	{ 0x0008, 0x0090 }, // iBeacon I
-	{ 0x0009, 0x00A0 }, // iBeacon L
-	{ 0x000A, 0x0090 }, // Relay W
-	{ 0x000B, 0x00A0 }, // Relay X
-	{ 0x000C, 0x00B0 }, // Relay Y
-	{ 0x000D, 0x00C0 } // Relay Z
+	{ 0x03, 0x40 }, // iBeacon D
+	{ 0x04, 0x50 }, // iBeacon E
+	{ 0x05, 0x60 }, // iBeacon F
+	{ 0x06, 0x70 }, // iBeacon G
+	{ 0x07, 0x80 }, // iBeacon H
+	{ 0x08, 0x90 }, // iBeacon I
+	{ 0x09, 0xA0 }, // iBeacon L
+	{ 0x0A, 0x90 }, // Relay W
+	{ 0x0B, 0xA0 }, // Relay X
+	{ 0x0C, 0xB0 }, // Relay Y
+	{ 0x0D, 0xC0 } // Relay Z
 };
 
-uint16_t staticNodeRSSI[4][2];
+int8_t staticNodeRSSI[4][2];
 
 void gen_uuid() {
     uint32_t rnd1 = sys_rand32_get();
@@ -279,16 +279,7 @@ static void set_onoff_state(struct bt_mesh_model *model, struct bt_mesh_msg_ctx 
 	onoff_state = msg_onoff_state;
 	uint8_t tid = net_buf_simple_pull_u8(buf);
 	printk("set onoff state: onoff=%u TID=%u", onoff_state, tid);
-	/*
-	if (onoff_state == 0)
-	{
-		thingy_led_off();
-	}
-	else
-	{
-		thingy_led_on(rgb_r,rgb_g,rgb_b);
-	}
-	*/
+
 	/*
 	 * 3.7.7.2 Acknowledged Set
 	 */ 
@@ -322,32 +313,30 @@ static void generic_onoff_get(struct bt_mesh_model *model, struct bt_mesh_msg_ct
 	generic_onoff_status(false, onoff_state);
 }
 
-static void generic_onoff_set(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx,	struct net_buf_simple *buf)
+static void generic_onoff_set(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx,	
+			struct net_buf_simple *buf)
 {
 	printk("gen_onoff_set\n");
 	set_onoff_state(model, ctx, buf, true);
 }
 
-static void generic_onoff_set_unack(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf)
+static void generic_onoff_set_unack(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, 
+			struct net_buf_simple *buf)
 {
-	//check unicast address - displayed on nrf mesh application
+	//check unicast address of static node - displayed on nrf mesh application
 	if (ctx->addr == 5) {
-		staticNodeRSSI[0][1] = (uint16_t) ctx->recv_rssi;
+		staticNodeRSSI[0][1] = ctx->recv_rssi;
 
 	} else if (ctx->addr == 6) {
-		staticNodeRSSI[1][1] = (uint16_t) ctx->recv_rssi;
+		staticNodeRSSI[1][1] = ctx->recv_rssi;
 
 	} else if (ctx->addr == 7) {
-		staticNodeRSSI[2][1] = (uint16_t) ctx->recv_rssi;
+		staticNodeRSSI[2][1] = ctx->recv_rssi;
 
 	} else if (ctx->addr == 8) {
-		staticNodeRSSI[3][1] = (uint16_t) ctx->recv_rssi;
+		staticNodeRSSI[3][1] = ctx->recv_rssi;
 
 	}
-	// staticNodeRSSI[0][1] = (uint16_t) ctx->recv_rssi;
-	// printk("addr:%d\napp:%d\nnet:%d\n", ctx->addr, ctx->app_idx, ctx->net_idx);
-	// beaconRSSI[9][1] = (uint16_t) ctx->recv_rssi;
-	// set_onoff_state(model, ctx, buf, false);
 }
 
 static const struct bt_mesh_model_op generic_onoff_op[] = {
@@ -365,10 +354,13 @@ BT_MESH_MODEL_PUB_DEFINE(generic_onoff_pub, NULL, 2 + 1);
 // -------------------------------------------------------------------------------------------------------
 
 // message opcodes
+
 #define BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK BT_MESH_MODEL_OP_2(0x82, 0x77)
 
 // NB: only unacknowledged light_hsl_set is implemented in this code
-static void set_hsl_state(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf) {
+static void set_hsl_state(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *ctx, 
+			struct net_buf_simple *buf) {
+
     uint16_t msg_hsl_lightness = net_buf_simple_pull_le16(buf);
     uint16_t msg_hsl_hue = net_buf_simple_pull_le16(buf);
     uint16_t msg_hsl_saturation = net_buf_simple_pull_le16(buf);
@@ -394,7 +386,8 @@ static void set_hsl_state(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *c
     }
 }
 
-static void light_hsl_set_unack(struct bt_mesh_model *model,struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf) {
+static void light_hsl_set_unack(struct bt_mesh_model *model,struct bt_mesh_msg_ctx *ctx, 
+			struct net_buf_simple *buf) {
     printk("light_hsl_set_unack\n");
     set_hsl_state(model, ctx, buf);
 }
@@ -420,10 +413,12 @@ static struct bt_mesh_health_srv health_srv = {
 // Composition
 // -----------
 
-#define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK	BT_MESH_MODEL_OP_2(0x82, 0x40)
+#define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK		BT_MESH_MODEL_OP_2(0x82, 0x40) // MOBILE A
+#define BT_MESH_MODEL_OP_MOBILE_2_TO_BASE_UNACK 	BT_MESH_MODEL_OP_2(0x82, 0x41) // MOBILE B
 
 // 22 bytes (5 sets of beaconRSSI data, init msg, tid value)
-BT_MESH_MODEL_PUB_DEFINE(data_mobile_to_base, NULL, 22); // was 2
+BT_MESH_MODEL_PUB_DEFINE(data_mobile_to_base, NULL, 12); // 22 when 16bit - 12 when 8bit
+BT_MESH_MODEL_PUB_DEFINE(data_mobile_to_base_2, NULL, 12); 
 
 
 static struct bt_mesh_model sig_models[] = {
@@ -432,6 +427,7 @@ static struct bt_mesh_model sig_models[] = {
 	BT_MESH_MODEL(BT_MESH_MODEL_ID_GEN_ONOFF_SRV, generic_onoff_op, &generic_onoff_pub, NULL),
 	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_HSL_SRV, light_hsl_op, &light_hsl_pub, NULL),
 	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_CLI, NULL, &data_mobile_to_base, &beaconRSSI[0]),
+	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_LC_CLI, NULL, &data_mobile_to_base_2, &beaconRSSI[0]),
 };
 
 // node contains elements.note that BT_MESH_MODEL_NONE means "none of this type" ands here means "no vendor models"
@@ -447,27 +443,33 @@ static const struct bt_mesh_comp comp = {
 };
 // Mobile to Base data model 
 
-static uint8_t test_tid = 0; // TODO: change
+static uint8_t msg_tid = 0; 
 int strongestSignals[13];
 
 int sendDataToBase(uint16_t message_type) {
 	int err;
-	struct bt_mesh_model* model = &sig_models[4];
+	struct bt_mesh_model* model;
+	if (message_type == BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK) {
+		model = &sig_models[4];
+	} else if (message_type == BT_MESH_MODEL_OP_MOBILE_2_TO_BASE_UNACK) {
+		model = &sig_models[5];
+	}
+	
 	printk("send data to base...");
 	if (model->pub->addr == BT_MESH_ADDR_UNASSIGNED) {
-		printk("No publish address associated with the light HSL client model - add one with a configuration app like nRF Mesh\n");
+		printk("No publish address associated with the light HSL client model - \
+					add one with a configuration app like nRF Mesh\n");
 		return -1;
 	}
 
 	int numMsgsAdded = 0;
-	// TODO: insert for loop to send all RSSI values
 
 	struct net_buf_simple* msg = model->pub->msg;
 	bt_mesh_model_msg_init(msg, message_type);
 	for (int i = 0; i < NUM_BEACONS; i++) {
 		if (strongestSignals[i] == 1) {
-			net_buf_simple_add_le16(msg, beaconRSSI[i][1]); 
-			net_buf_simple_add_le16(msg, beaconRSSI[i][0]);
+			net_buf_simple_add_u8(msg, beaconRSSI[i][1]); 
+			net_buf_simple_add_u8(msg, beaconRSSI[i][0]);
 			numMsgsAdded++;
 			// only send a set of 5 rssi/name values;
 			if (numMsgsAdded == 5) {
@@ -478,12 +480,12 @@ int sendDataToBase(uint16_t message_type) {
 	// add empty data sets to fill transmit buffer as
 	// base node is expecting a certain amount of data
 	while (numMsgsAdded < 5) {
-		net_buf_simple_add_le16(msg, 0xFFFF); 
-		net_buf_simple_add_le16(msg, 0x0008); 
+		net_buf_simple_add_u8(msg, 0xFF); 
+		net_buf_simple_add_u8(msg, 0x0E); //TODO change
 		numMsgsAdded++;
 	}
-	net_buf_simple_add_u8(msg, test_tid);
-	test_tid++;
+	net_buf_simple_add_u8(msg, msg_tid);
+	msg_tid += 2;
 	printk("publishing RSSI data\n");
 	err = bt_mesh_model_publish(model);
 	if (err) {
@@ -504,7 +506,8 @@ void generic_onoff_status(bool publish, uint8_t on_or_off)
     int err;
     struct bt_mesh_model *model = &sig_models[2];
 	if (publish && model->pub->addr == BT_MESH_ADDR_UNASSIGNED) {
-		printk("No publish address associated with the generic on off server model - add one with a configuration app like nRF Mesh\n");
+		printk("No publish address associated with the generic on off server model - \
+					add one with a configuration app like nRF Mesh\n");
 		return;
 	} 
 
@@ -644,7 +647,7 @@ static void scan_cb(const bt_addr_le_t *addr, int8_t rssi, uint8_t advType, stru
     {
         // See if a valid node; if so, save data
         if (strcmp(adData.name, nodeNames[i]) == 0) {
-			beaconRSSI[i][1] = (uint16_t) rssi;		
+			beaconRSSI[i][1] = rssi;		
         }
     }
 }
@@ -661,9 +664,9 @@ static void check_family_colour() {
 
 static void reset_beacon_values() {
 	for (int i = 0; i < NUM_BEACONS; i++) {
-		beaconRSSI[i][1] = 0x0000;
-		nodeData[i].rssi = 0x00;
-		strongestSignals[i] = 1;
+		beaconRSSI[i][1] = -127;
+		nodeData[i].rssi = -127;
+		strongestSignals[i] = 0;
 	}
 	beaconCount = 0; // reset count index
 }
@@ -671,8 +674,6 @@ static void reset_beacon_values() {
 void main(void)
 {
 	printk("thingy light node v1.1.0\n");
-
-	test_tid = 0;
 
 	configure_thingy_led_controller();
     indicate_on();
@@ -689,6 +690,13 @@ void main(void)
 	if (err)
 	{
 		printk("bt_enable failed with err %d", err);
+	}
+
+	// tid's are even for mobile A and odd for mobile B
+	if (strcmp(bt_get_name(), "Mobile_A") == 0) {
+		msg_tid = 0;
+	} else if (strcmp(bt_get_name(), "Mobile_B") == 0) {
+		msg_tid = 1;
 	}
 
 	struct bt_le_scan_param scanParams = {
@@ -729,14 +737,14 @@ void main(void)
 			}
 
 			for (int j = 0; j < NUM_BEACONS; j++) {
-				int count = NUM_BEACONS;
+				int count = 0;
 				printk("%s: %d\n", nodeNames[j], beaconRSSI[j][1]);
 				for (int k = 0; k < NUM_BEACONS; k++) {
 					
-					if (beaconRSSI[j][1] < beaconRSSI[k][1]) {
-						count--;
-						if (count <= 8) {
-							strongestSignals[j] = 0;
+					if (beaconRSSI[j][1] > beaconRSSI[k][1]) {
+						count++;
+						if (count >= 8) {
+							strongestSignals[j] = 1;
 							break;
 						}
 					}
@@ -744,11 +752,17 @@ void main(void)
 			}
 
 			for (int i = 0; i < 4; i++) {
-				staticNodeRSSI[i][1] = 0;
+				staticNodeRSSI[i][1] = -127;
 			}
 			// k_msleep(500);
-			if (sendDataToBase(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK)) {
-				printk("unable to send RSSI data\n");
+			if (strcmp(bt_get_name(), "Mobile_A") == 0) {
+				if (sendDataToBase(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK)) {
+					printk("unable to send RSSI data\n");
+				}
+			} else if (strcmp(bt_get_name(), "Mobile_B") == 0) {
+				if (sendDataToBase(BT_MESH_MODEL_OP_MOBILE_2_TO_BASE_UNACK)) {
+					printk("unable to send RSSI data\n");
+				}
 			}
 			
 			k_msleep(1500);
