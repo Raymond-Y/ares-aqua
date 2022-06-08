@@ -26,32 +26,7 @@ class BaseProcessing:
         self.beacon_xvals = np.empty(13)
         self.beacon_yvals = np.empty(13)
 
-        self.mobile_x = 0
-        self.mobile_y = 0
-        self.nodeA_index = 0
-        self.nodeB_index = 0
-        self.nodeC_index = 0
-        self.nodeD_index = 0
-        self.nodeE_index = 0
-        self.nodeF_index = 0
-        self.nodeG_index = 0
-        self.nodeH_index = 0
-        self.nodeI_index = 0
-        self.nodeJ_index = 0
-        self.nodeK_index = 0
-        self.nodeL_index = 0
-        self.rssi_data_samples_nodeA = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeB = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeC = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeD = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeE = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeF = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeG = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeH = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeI = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeJ = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeK = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeL = np.ones(ARRAY_SIZE)
+
         self.size_received_beacons = 0
         # self.x0 = 3
         # self.y0 = 2
@@ -66,12 +41,11 @@ class BaseProcessing:
         self.fig, self.ax = plt.subplots()
         img = plt.imread("floorplan.PNG")
         self.ax.imshow(img, extent=[0,29.9,0,27.6])
-        #self.graph, = self.ax.plot([], [],'ro')
+
 
         self.mobilenode1, = self.ax.plot([],[],'go', markersize='12')
         self.mobilenode2, = self.ax.plot([],[],'ro', markersize='12')
-        
-        #self.ax.axis([0, 41, 0, 21])
+
         self.ax.axis([0, 32, 0, 21])
         self.setup_beacons()
         self.ax.plot(self.beacon_xvals,self.beacon_yvals,'bo', markersize='4')
@@ -186,6 +160,8 @@ class BaseProcessing:
                         .field("actual_value", self.actual_position) \
                         .time(datetime.utcnow(), WritePrecision.NS)
                     self.write_api.write(self.bucket, self.org, point)
+                    
+
                     self.calculated_values_index = 0
                     self.uploaded_values += 1
                     # only upload 10 avg values per position

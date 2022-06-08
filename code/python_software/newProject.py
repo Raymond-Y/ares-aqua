@@ -23,102 +23,65 @@ class BaseProcessing:
         self.lock_rssi_coords = threading.Lock()
         self.beacon_x1 = 0
         self.beacon_y1 = 0
+        #beacon positions
         self.beacon_xvals = np.empty(13)
         self.beacon_yvals = np.empty(13)
 
-        self.mobile_x = 0
-        self.mobile_y = 0
-        self.nodeA_index = 0
-        self.nodeB_index = 0
-        self.nodeC_index = 0
-        self.nodeD_index = 0
-        self.nodeE_index = 0
-        self.nodeF_index = 0
-        self.nodeG_index = 0
-        self.nodeH_index = 0
-        self.nodeI_index = 0
-        self.nodeJ_index = 0
-        self.nodeK_index = 0
-        self.nodeL_index = 0
-        self.rssi_data_samples_nodeA = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeB = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeC = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeD = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeE = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeF = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeG = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeH = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeI = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeJ = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeK = np.ones(ARRAY_SIZE)
-        self.rssi_data_samples_nodeL = np.ones(ARRAY_SIZE)
+
         self.size_received_beacons = 0
-        # self.x0 = 3
-        # self.y0 = 2
+        #mobile x and y coordinates
         self.mobileNode1x = 0
         self.mobileNode1y = 0
         self.mobileNode2x = 0
         self.mobileNode2y = 0
+        # x and y positions of nodes that have sent rssi data
         self.receivedXPositions = np.ones(5)
         self.receivedYPositions = np.ones(5)
+        # received rssi data values
         self.receivedRSSI = np.ones(5)
+        # last mobile device to transmit
         self.receivedMobileNodeNumber = 0
         self.fig, self.ax = plt.subplots()
         img = plt.imread("floorplan.PNG")
         self.ax.imshow(img, extent=[0,29.9,0,27.6])
-        #self.graph, = self.ax.plot([], [],'ro')
 
         self.mobilenode1, = self.ax.plot([],[],'go', markersize='12')
         self.mobilenode2, = self.ax.plot([],[],'ro', markersize='12')
         
-        #self.ax.axis([0, 41, 0, 21])
         self.ax.axis([0, 32, 0, 21])
         self.setup_beacons()
         self.ax.plot(self.beacon_xvals,self.beacon_yvals,'bo', markersize='4')
         self.writeFile = open('resultsStatic.csv','w')
         self.tempcount =0
+
+    #Get beacon x and y positions from the csv
     def setup_beacons(self):
-        # inputfile = open('BeaconData.csv','r')
-        # for row in inputfile:
-        #     print(row)
-        #     print(type(row))
+
         csv_reader = csv.reader(open('BeaconData.csv'), delimiter=',')
         line_count = 0
         for row in csv_reader:
-        #for row in range(10):
             
             self.beacon_xvals[line_count] = row[1]
             self.beacon_yvals[line_count] = row[2]
             line_count += 1
-        print(self.beacon_xvals)
-        #print(self.beacon_yvals)
-        #print(self.beacon_yvals[7])
-        print(np.mean(self.beacon_xvals))
-
+        
+    # update the location of mobile positions on plot
     def update(self,extra):
         self.lock_rssi_coords.acquire()
-        #self.graph.set_data(self.x0,self.y0)
-        #  BaseProcessing.mobileNode1x = random.randint(5,15)
-        # BaseProcessing.mobileNode1y = random.randint(8,10)
-        # print("Coords:%f,%f" % (BaseProcessing.x0, BaseProcessing.y0))
-        # print("MobileNode1:%f,%f" % (BaseProcessing.mobileNode1x, BaseProcessing.mobileNode1y))
         self.mobilenode1.set_data(self.mobileNode1x, self.mobileNode1y)
         self.mobilenode2.set_data(self.mobileNode2x, self.mobileNode2y)
         self.fig.suptitle(" MobileNode1:(%f,%f), MobileNode2:(%f,%f)" %(self.mobileNode1x, self.mobileNode1y, self.mobileNode2x, self.mobileNode2y))
 
         self.lock_rssi_coords.release()
         
-
+    #initialize matlib plot animation
     def animate(self):
         self.anim = animation.FuncAnimation(self.fig, self.update,interval=400, blit=False)
 
-
+    # calculte position of mobile based on variable number of rssi values
     def calculate_positions(self):
         self.lock_rssi_coords.acquire()
-        #self.lock_data.acquire()
-        #print("ENTER CALCULATE POSITIONS")
-        #self.tempcount+= 1
-        #print("Self count%i", self.tempcount)
+        # calculate positions if 3 recieved rssi values
         if (self.size_received_beacons == 3):
             r1 = self.receivedRSSI[0]
             r2 = self.receivedRSSI[1]
@@ -160,6 +123,7 @@ class BaseProcessing:
             else:
                 self.mobileNode2x = x0
                 self.mobileNode2y = y0
+        # calculate positions if 4 recieved rssi values
         elif (self.size_received_beacons == 4):
             r1 = self.receivedRSSI[0]
             r2 = self.receivedRSSI[1]
@@ -203,6 +167,7 @@ class BaseProcessing:
             else:
                 self.mobileNode2x = x0
                 self.mobileNode2y = y0
+        # calculate positions if 5 recieved rssi values
         elif (self.size_received_beacons == 5):
             r1 = self.receivedRSSI[0]
             r2 = self.receivedRSSI[1]
@@ -272,7 +237,7 @@ def update_data(BaseProcessing):
         
         if not (BaseProcessing.isConnected):
             try:
-                    #print("HER")
+                    
                     # setup serial port
                     ser = serial.Serial('/dev/ttyACM0', 115200, timeout = 1)
                     BaseProcessing.serial_port = ser
@@ -282,13 +247,13 @@ def update_data(BaseProcessing):
                     BaseProcessing.lock_connection_status.release()
 
             except Exception:
-                #print("ERROR1")
+                
                 pass
         else:
             try:
-                #print("trying to read")
+                
                 output = BaseProcessing.serial_port.readline()
-                #print(output)
+                
                 output_converted = ((str(output, 'utf-8'))[:-1])
                 #FIXME REMOVE WHEN NOT TESTING
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,12:-59,}'
@@ -297,17 +262,14 @@ def update_data(BaseProcessing):
                 if len(output_converted) > 1:
                     print(output_converted)
                     
-                    #output_converted = '{"Node": 52, "rssi":93}'
-                    #output_converted = '{"Node": 52, "rssi":93, "ultra":53}'
-                    #output_converted = '{"Mobile1, 2:-75, 4:-69, 5:-67, 10:-73,12:-59,'
-                    #format = 
+                    
                     outputs = output_converted[1:-2].replace(" ", "").split(",")
                     #print(outputs)
                     #print(len(outputs))
                     # 3 rssi readings
-                    #BaseProcessing.lock_data.acquire()
+                    
                     if(len(outputs) == 4):
-                        print("ACUUIRED 3 data")
+                       
                         mobile_node_number = int((outputs[0])[-1:])
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
@@ -319,6 +281,7 @@ def update_data(BaseProcessing):
                         nodeNumber1 = int(nodeInfo1[0])
                         nodeNumber2 = int(nodeInfo2[0])
                         nodeNumber3 = int(nodeInfo3[0])
+                        # assign x and y position of nodes that sent data
                         BaseProcessing.receivedXPositions[0] = BaseProcessing.beacon_xvals[nodeNumber1]
                         BaseProcessing.receivedYPositions[0] = BaseProcessing.beacon_yvals[nodeNumber1]
                         BaseProcessing.receivedXPositions[1] = BaseProcessing.beacon_xvals[nodeNumber2]
@@ -328,19 +291,19 @@ def update_data(BaseProcessing):
                         receivedRSSI1 = (nodeInfo1[1])
                         receivedRSSI2 = (nodeInfo2[1])
                         receivedRSSI3= (nodeInfo3[1])
+                        #convert rssi db to distance
                         receivedRSSI_actual1 = 10**((-63-float(receivedRSSI1))/ (10*2))
                         receivedRSSI_actual2 = 10**((-63-float(receivedRSSI2))/ (10*2))
                         receivedRSSI_actual3 = 10**((-63-float(receivedRSSI3))/ (10*2))
 
-                        #BaseProcessing.lock_data.release()
+                        
                         BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
                         BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
                         BaseProcessing.receivedRSSI[2] = receivedRSSI_actual3
-                        print("END ACUUIRED 3 data")
                         BaseProcessing.calculate_positions()
-                        
+                    # recieved 4 rssi info
                     if(len(outputs) == 5):
-                        print("ACUUIRED 4 data")
+                        
                         mobile_node_number = int((outputs[0])[-1:])
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
@@ -353,7 +316,7 @@ def update_data(BaseProcessing):
                         nodeNumber2 = int(nodeInfo2[0])
                         nodeNumber3 = int(nodeInfo3[0])
                         nodeNumber4 = int(nodeInfo4[0])
-
+                        # assign x and y position of nodes that sent data
                         BaseProcessing.receivedXPositions[0] = BaseProcessing.beacon_xvals[nodeNumber1]
                         BaseProcessing.receivedYPositions[0] = BaseProcessing.beacon_yvals[nodeNumber1]
                         BaseProcessing.receivedXPositions[1] = BaseProcessing.beacon_xvals[nodeNumber2]
@@ -363,11 +326,12 @@ def update_data(BaseProcessing):
                         BaseProcessing.receivedXPositions[3] = BaseProcessing.beacon_xvals[nodeNumber4]
                         BaseProcessing.receivedYPositions[3] = BaseProcessing.beacon_yvals[nodeNumber4]
 
-
+                        # assign rssi info
                         receivedRSSI1 = (nodeInfo1[1])
                         receivedRSSI2 = (nodeInfo2[1])
                         receivedRSSI3= (nodeInfo3[1])
                         receivedRSSI4= (nodeInfo4[1])
+                        # convert rssi db to distance
                         receivedRSSI_actual1 = 10**((-63-float(receivedRSSI1))/ (10*2))
                         receivedRSSI_actual2 = 10**((-63-float(receivedRSSI2))/ (10*2))
                         receivedRSSI_actual3 = 10**((-63-float(receivedRSSI3))/ (10*2))
@@ -377,13 +341,11 @@ def update_data(BaseProcessing):
                         BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
                         BaseProcessing.receivedRSSI[2] = receivedRSSI_actual3
                         BaseProcessing.receivedRSSI[3] = receivedRSSI_actual4
-                        #BaseProcessing.lock_data.release()
                         BaseProcessing.calculate_positions()
-                        print("END ACUUIRED 4 data")
 
-                        
+                    # recieved 5 rssi info
                     if(len(outputs) == 6):
-                        print("ACUUIRED 5 data")
+                        
                         mobile_node_number = int((outputs[0])[-1:])
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
@@ -398,6 +360,7 @@ def update_data(BaseProcessing):
                         nodeNumber3 = int(nodeInfo3[0])
                         nodeNumber4 = int(nodeInfo4[0])
                         nodeNumber5 = int(nodeInfo5[0])
+                        # assign x and y positions of nodes that sent rssi
                         BaseProcessing.receivedXPositions[0] = BaseProcessing.beacon_xvals[nodeNumber1]
                         BaseProcessing.receivedYPositions[0] = BaseProcessing.beacon_yvals[nodeNumber1]
                         BaseProcessing.receivedXPositions[1] = BaseProcessing.beacon_xvals[nodeNumber2]
@@ -409,12 +372,13 @@ def update_data(BaseProcessing):
                         BaseProcessing.receivedXPositions[4] = BaseProcessing.beacon_xvals[nodeNumber5]
                         BaseProcessing.receivedYPositions[4] = BaseProcessing.beacon_yvals[nodeNumber5]
 
-
+                        # assign rssi info
                         receivedRSSI1 = (nodeInfo1[1])
                         receivedRSSI2 = (nodeInfo2[1])
                         receivedRSSI3= (nodeInfo3[1])
                         receivedRSSI4= (nodeInfo4[1])
                         receivedRSSI5= (nodeInfo5[1])
+                        #convert rssi db to distance
                         receivedRSSI_actual1 = 10**((-63-float(receivedRSSI1))/ (10*2))
                         receivedRSSI_actual2 = 10**((-63-float(receivedRSSI2))/ (10*2))
                         receivedRSSI_actual3 = 10**((-63-float(receivedRSSI3))/ (10*2))
@@ -428,60 +392,13 @@ def update_data(BaseProcessing):
 
                         BaseProcessing.receivedRSSI[4] = receivedRSSI_actual5
 
-                        print("END ACUUIRED 5 data")
 
-                        #BaseProcessing.lock_data.release()
+
                         BaseProcessing.calculate_positions()
-                    
-                            
-
-               
-
-
-
-
-
-
-                    
-                    # if(len(outputs) == 3):
-                    #     node = outputs[0].split(":")[1]
-                    #     time1 = datetime.utcnow()
-
-                    #     time2 = (calendar.timegm(time1.utctimetuple()) * (10**9))
-                    #     strtime = str(time2)
-                    #     rssi = outputs[1].split(":")[1]
-                    #     ultra = outputs[2].split(":")[1]
-                    #     if(node =='12'):
-                            
-                    #         result_rssi = ("StaticNodeA" + (" RSSI=\"%s\" " %rssi) + strtime + '\n')
-                    #         BaseProcessing.writeFile.write(result_rssi)
-                    #         result_ultra = ("StaticNodeA" + (" Ultrasound=\"%s\" " %ultra) + strtime + '\n')
-                    #         BaseProcessing.writeFile.write(result_ultra)
-                    #     elif(node =='13'):
-                    #         result_rssi = ("StaticNodeB" + (" RSSI=\"%s\" " %rssi) + strtime + '\n')
-                    #         BaseProcessing.writeFile.write(result_rssi)
-                    #         result_ultra = ("StaticNodeB" + (" Ultrasound=\"%s\" " %ultra) + strtime + '\n')
-                    #         BaseProcessing.writeFile.write(result_ultra)
-                    #     elif(node =='14'):
-                    #         result_rssi = ("StaticNodeC" + (" RSSI=\"%s\" " %rssi) + strtime + '\n')
-                    #         BaseProcessing.writeFile.write(result_rssi)
-                    #         result_ultra = ("StaticNodeC" + (" Ultrasound=\"%s\" " %ultra) + strtime + '\n')
-                    #         BaseProcessing.writeFile.write(result_ultra)
-                    #     elif(node =='15'):
-                    #         result_rssi = ("StaticNodeD" + (" RSSI=\"%s\" " %rssi) + strtime + '\n')
-                    #         BaseProcessing.writeFile.write(result_rssi)
-                    #         result_ultra = ("StaticNodeD" + (" Ultrasound=\"%s\" " %ultra) + strtime + '\n')
-                    #         BaseProcessing.writeFile.write(result_ultra)
-                        
-                    #     BaseProcessing.writeFile.flush()
-
-
-
-
+                                                
             except Exception as e:
-                #print(output_converted)
-                #print("Hit ERROR2")
-                print(e)
+
+                
                 
                 BaseProcessing.serial_port.close()
                 BaseProcessing.lock_connection_status.acquire()
@@ -496,7 +413,7 @@ def updateGraph(BaseProcessing):
 def main():
     time.sleep(4)
     baseProgram = BaseProcessing()
-    
+    #thread to process messages and update mobile locations
     reading_thr = threading.Thread(target = update_data, args=(baseProgram,))
     reading_thr.setDaemon(True)
     reading_thr.start()
@@ -506,7 +423,7 @@ def main():
     while True:
         time.sleep(100)
         
-    #     #update_data(baseProgram)
+
 
 
 
