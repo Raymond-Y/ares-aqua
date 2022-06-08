@@ -256,7 +256,7 @@ def update_data(BaseProcessing):
                 
                 output_converted = ((str(output, 'utf-8'))[:-1])
                 #FIXME REMOVE WHEN NOT TESTING
-                #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,12:-59,}'
+                #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,12:-61,}'
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,}'
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-60}'
                 if len(output_converted) > 1:
@@ -292,9 +292,9 @@ def update_data(BaseProcessing):
                         receivedRSSI2 = (nodeInfo2[1])
                         receivedRSSI3= (nodeInfo3[1])
                         #convert rssi db to distance
-                        receivedRSSI_actual1 = 10**((-63-float(receivedRSSI1))/ (10*2))
-                        receivedRSSI_actual2 = 10**((-63-float(receivedRSSI2))/ (10*2))
-                        receivedRSSI_actual3 = 10**((-63-float(receivedRSSI3))/ (10*2))
+                        receivedRSSI_actual1 = 10**((-61-float(receivedRSSI1))/ (10*2))
+                        receivedRSSI_actual2 = 10**((-59-float(receivedRSSI2))/ (10*2))
+                        receivedRSSI_actual3 = 10**((-59-float(receivedRSSI3))/ (10*2))
 
                         
                         BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
@@ -332,10 +332,10 @@ def update_data(BaseProcessing):
                         receivedRSSI3= (nodeInfo3[1])
                         receivedRSSI4= (nodeInfo4[1])
                         # convert rssi db to distance
-                        receivedRSSI_actual1 = 10**((-63-float(receivedRSSI1))/ (10*2))
-                        receivedRSSI_actual2 = 10**((-63-float(receivedRSSI2))/ (10*2))
-                        receivedRSSI_actual3 = 10**((-63-float(receivedRSSI3))/ (10*2))
-                        receivedRSSI_actual4 = 10**((-63-float(receivedRSSI4))/ (10*2))
+                        receivedRSSI_actual1 = 10**((-59-float(receivedRSSI1))/ (10*2))
+                        receivedRSSI_actual2 = 10**((-59-float(receivedRSSI2))/ (10*2))
+                        receivedRSSI_actual3 = 10**((-59-float(receivedRSSI3))/ (10*2))
+                        receivedRSSI_actual4 = 10**((-59-float(receivedRSSI4))/ (10*2))
 
                         BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
                         BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
@@ -379,11 +379,11 @@ def update_data(BaseProcessing):
                         receivedRSSI4= (nodeInfo4[1])
                         receivedRSSI5= (nodeInfo5[1])
                         #convert rssi db to distance
-                        receivedRSSI_actual1 = 10**((-63-float(receivedRSSI1))/ (10*2))
-                        receivedRSSI_actual2 = 10**((-63-float(receivedRSSI2))/ (10*2))
-                        receivedRSSI_actual3 = 10**((-63-float(receivedRSSI3))/ (10*2))
-                        receivedRSSI_actual4 = 10**((-63-float(receivedRSSI4))/ (10*2))
-                        receivedRSSI_actual5 = 10**((-63-float(receivedRSSI5))/ (10*2))
+                        receivedRSSI_actual1 = 10**((-59-float(receivedRSSI1))/ (10*2))
+                        receivedRSSI_actual2 = 10**((-59-float(receivedRSSI2))/ (10*2))
+                        receivedRSSI_actual3 = 10**((-59-float(receivedRSSI3))/ (10*2))
+                        receivedRSSI_actual4 = 10**((-59-float(receivedRSSI4))/ (10*2))
+                        receivedRSSI_actual5 = 10**((-59-float(receivedRSSI5))/ (10*2))
 
                         BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
                         BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
