@@ -328,9 +328,9 @@ def update_data(BaseProcessing):
                         receivedRSSI1 = (nodeInfo1[1])
                         receivedRSSI2 = (nodeInfo2[1])
                         receivedRSSI3= (nodeInfo3[1])
-                        receivedRSSI_actual1 = 10**((-53-float(receivedRSSI1))/ (10*2))
-                        receivedRSSI_actual2 = 10**((-53-float(receivedRSSI2))/ (10*2))
-                        receivedRSSI_actual3 = 10**((-53-float(receivedRSSI3))/ (10*2))
+                        receivedRSSI_actual1 = 10**((-63-float(receivedRSSI1))/ (10*2))
+                        receivedRSSI_actual2 = 10**((-63-float(receivedRSSI2))/ (10*2))
+                        receivedRSSI_actual3 = 10**((-63-float(receivedRSSI3))/ (10*2))
 
                         #BaseProcessing.lock_data.release()
                         BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
@@ -368,10 +368,10 @@ def update_data(BaseProcessing):
                         receivedRSSI2 = (nodeInfo2[1])
                         receivedRSSI3= (nodeInfo3[1])
                         receivedRSSI4= (nodeInfo4[1])
-                        receivedRSSI_actual1 = 10**((-53-float(receivedRSSI1))/ (10*2))
-                        receivedRSSI_actual2 = 10**((-53-float(receivedRSSI2))/ (10*2))
-                        receivedRSSI_actual3 = 10**((-53-float(receivedRSSI3))/ (10*2))
-                        receivedRSSI_actual4 = 10**((-53-float(receivedRSSI4))/ (10*2))
+                        receivedRSSI_actual1 = 10**((-63-float(receivedRSSI1))/ (10*2))
+                        receivedRSSI_actual2 = 10**((-63-float(receivedRSSI2))/ (10*2))
+                        receivedRSSI_actual3 = 10**((-63-float(receivedRSSI3))/ (10*2))
+                        receivedRSSI_actual4 = 10**((-63-float(receivedRSSI4))/ (10*2))
 
                         BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
                         BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
@@ -415,11 +415,11 @@ def update_data(BaseProcessing):
                         receivedRSSI3= (nodeInfo3[1])
                         receivedRSSI4= (nodeInfo4[1])
                         receivedRSSI5= (nodeInfo5[1])
-                        receivedRSSI_actual1 = 10**((-53-float(receivedRSSI1))/ (10*2))
-                        receivedRSSI_actual2 = 10**((-53-float(receivedRSSI2))/ (10*2))
-                        receivedRSSI_actual3 = 10**((-53-float(receivedRSSI3))/ (10*2))
-                        receivedRSSI_actual4 = 10**((-53-float(receivedRSSI4))/ (10*2))
-                        receivedRSSI_actual5 = 10**((-53-float(receivedRSSI5))/ (10*2))
+                        receivedRSSI_actual1 = 10**((-63-float(receivedRSSI1))/ (10*2))
+                        receivedRSSI_actual2 = 10**((-63-float(receivedRSSI2))/ (10*2))
+                        receivedRSSI_actual3 = 10**((-63-float(receivedRSSI3))/ (10*2))
+                        receivedRSSI_actual4 = 10**((-63-float(receivedRSSI4))/ (10*2))
+                        receivedRSSI_actual5 = 10**((-63-float(receivedRSSI5))/ (10*2))
 
                         BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
                         BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
