@@ -1,3 +1,4 @@
+#https://docs.influxdata.com/influxdb/cloud/query-data/common-queries/multiple-fields-in-calculations/
 from datetime import datetime
 import random
 import influxdb_client, os, time
