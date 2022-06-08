@@ -12,15 +12,31 @@ url1 = "https://us-east-1-1.aws.cloud2.influxdata.com"
 client = influxdb_client.InfluxDBClient(url=url1, token=token1, org=org1)    
 
 query_api = client.query_api()
+#working for x vals
+# query = ' from(bucket:"Test2")\
+# |> range(start: -6h)\
+# |> filter(fn:(r) => r._measurement == "Point")\
+# |> filter(fn:(r) => r._field == "x" )'
+
+# query = ' from(bucket:"Test2")\
+# |> range(start: -6h)\
+# |> filter(fn:(r) => r._measurement == "Point")\
+# |> filter(fn:(r) => r._field == "x" or r._field == "y" or r._field == "actual_value" )'
+
 query = ' from(bucket:"Test2")\
 |> range(start: -6h)\
 |> filter(fn:(r) => r._measurement == "Point")\
-|> filter(fn:(r) => r._field == "x" )'
+|> filter(fn:(r) => r._field == "x" or r._field == "y" or r._field == "actual_value" )\
+|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")'
+
 result = query_api.query(org=org1, query=query)
 results = []
 for table in result:
-    for record in table.records:
-        results.append((record.get_field(), record.get_value()))
+    for row in table.records:
+        print(type(row))
+        # print(f'{row.values["_time"]}: host={row.values["host"]},device={row.values["device"]} '
+        #           f'{row.values["_value"]} °C')
+        #results.append((record.get_field(), record.get_value()))
 
 print(results)
 print(type(results))
