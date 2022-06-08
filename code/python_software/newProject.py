@@ -73,6 +73,18 @@ class BaseProcessing:
         self.classifier = KNeighborsClassifier(n_neighbors=3)
         self.classifier.fit(self.trainingDataset, self.classifierDataset)
 
+        self.enough_mobile1_samples = 0
+        self.enough_mobile2_samples = 0
+        self.mobilenode1_sample_index = 0
+        self.mobilenode2_sample_index = 0
+        self.mobilenode1x_sample_array = np.ones(5)
+        self.mobilenode1y_sample_array = np.ones(5)
+        self.mobilenode2x_sample_array = np.ones(5)
+        self.mobilenode2y_sample_array = np.ones(5)
+        self.knn_samplesize =5
+
+
+
     #Get beacon x and y positions from the csv
     def setup_beacons(self):
 
@@ -132,18 +144,61 @@ class BaseProcessing:
             x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
             # Determine KNN 
             try:
-                predict= self.classifier.predict([[x0,y0]])[0]
-                predict_split = predict.split("-")
-                knn_x = float(predict_split[0])
-                knn_y = float(predict_split[1])
                 if(self.receivedMobileNodeNumber == 1):
-                    self.mobileNode1x_knn = knn_x
-                    self.mobileNode1y_knn = knn_y
-                else:
-                    self.mobileNode2x_knn = knn_x
-                    self.mobileNode2y_knn = knn_y
-                
+                    if(self.enough_mobile1_samples):
+                        avg_test_x = np.mean(self.mobilenode1x_sample_array)
+                        avg_test_y = np.mean(self.mobilenode1y_sample_array)
+                        predict= self.classifier.predict([[avg_test_x,avg_test_y]])[0]
+                        predict_split = predict.split("-")
+                        knn_x = float(predict_split[0])
+                        knn_y = float(predict_split[1])
+                        self.mobilenode1x_sample_array[mobilenode1_sample_index] = x0
+                        self.mobilenode1y_sample_array[mobilenode1_sample_index] = y0
+                        self.mobileNode1x_knn = knn_x
+                        self.mobileNode1y_knn = knn_y
+                        self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) % self.knn_samplesize
+                    else:
+                        predict= self.classifier.predict([[x0,y0]])[0]
+                        predict_split = predict.split("-")
+                        knn_x = float(predict_split[0])
+                        knn_y = float(predict_split[1])
 
+                        self.mobileNode1x_knn = knn_x
+                        self.mobileNode1y_knn = knn_y
+                        self.mobilenode1x_sample_array[mobilenode1_sample_index] = x0
+                        self.mobilenode1y_sample_array[mobilenode1_sample_index] = y0
+
+                        if((self.mobilenode1_sample_index+ 1) == self.knn_samplesize):
+                            self.enough_mobile1_samples = 1
+                        self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) % self.knn_samplesize
+                else: 
+                    if(self.enough_mobile2_samples):
+                        avg_test_x = np.mean(self.mobilenode2x_sample_array)
+                        avg_test_y = np.mean(self.mobilenode2y_sample_array)
+                        predict= self.classifier.predict([[avg_test_x,avg_test_y]])[0]
+                        predict_split = predict.split("-")
+                        knn_x = float(predict_split[0])
+                        knn_y = float(predict_split[1])
+                        self.mobilenode2x_sample_array[mobilenode1_sample_index] = x0
+                        self.mobilenode2y_sample_array[mobilenode1_sample_index] = y0
+                        self.mobileNode2x_knn = knn_x
+                        self.mobileNode2y_knn = knn_y
+                        self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) % self.knn_samplesize
+                    else:
+                        predict= self.classifier.predict([[x0,y0]])[0]
+                        predict_split = predict.split("-")
+                        knn_x = float(predict_split[0])
+                        knn_y = float(predict_split[1])
+
+                        self.mobileNode2x_knn = knn_x
+                        self.mobileNode2y_knn = knn_y
+                        self.mobilenode2x_sample_array[mobilenode1_sample_index] = x0
+                        self.mobilenode2y_sample_array[mobilenode1_sample_index] = y0
+                        
+
+                        if((self.mobilenode2_sample_index+ 1) == self.knn_samplesize):
+                            self.enough_mobile2_samples = 1
+                        self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) % self.knn_samplesize
             except Exception:
                 print("KNN Exception")
 
@@ -210,18 +265,61 @@ class BaseProcessing:
 
             # Determine KNN 
             try:
-                predict= self.classifier.predict([[x0,y0]])[0]
-                predict_split = predict.split("-")
-                knn_x = float(predict_split[0])
-                knn_y = float(predict_split[1])
                 if(self.receivedMobileNodeNumber == 1):
-                    self.mobileNode1x_knn = knn_x
-                    self.mobileNode1y_knn = knn_y
-                else:
-                    self.mobileNode2x_knn = knn_x
-                    self.mobileNode2y_knn = knn_y
-                
+                    if(self.enough_mobile1_samples):
+                        avg_test_x = np.mean(self.mobilenode1x_sample_array)
+                        avg_test_y = np.mean(self.mobilenode1y_sample_array)
+                        predict= self.classifier.predict([[avg_test_x,avg_test_y]])[0]
+                        predict_split = predict.split("-")
+                        knn_x = float(predict_split[0])
+                        knn_y = float(predict_split[1])
+                        self.mobilenode1x_sample_array[mobilenode1_sample_index] = x0
+                        self.mobilenode1y_sample_array[mobilenode1_sample_index] = y0
+                        self.mobileNode1x_knn = knn_x
+                        self.mobileNode1y_knn = knn_y
+                        self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) % self.knn_samplesize
+                    else:
+                        predict= self.classifier.predict([[x0,y0]])[0]
+                        predict_split = predict.split("-")
+                        knn_x = float(predict_split[0])
+                        knn_y = float(predict_split[1])
 
+                        self.mobileNode1x_knn = knn_x
+                        self.mobileNode1y_knn = knn_y
+                        self.mobilenode1x_sample_array[mobilenode1_sample_index] = x0
+                        self.mobilenode1y_sample_array[mobilenode1_sample_index] = y0
+
+                        if((self.mobilenode1_sample_index+ 1) == self.knn_samplesize):
+                            self.enough_mobile1_samples = 1
+                        self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) % self.knn_samplesize
+                else: 
+                    if(self.enough_mobile2_samples):
+                        avg_test_x = np.mean(self.mobilenode2x_sample_array)
+                        avg_test_y = np.mean(self.mobilenode2y_sample_array)
+                        predict= self.classifier.predict([[avg_test_x,avg_test_y]])[0]
+                        predict_split = predict.split("-")
+                        knn_x = float(predict_split[0])
+                        knn_y = float(predict_split[1])
+                        self.mobilenode2x_sample_array[mobilenode1_sample_index] = x0
+                        self.mobilenode2y_sample_array[mobilenode1_sample_index] = y0
+                        self.mobileNode2x_knn = knn_x
+                        self.mobileNode2y_knn = knn_y
+                        self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) % self.knn_samplesize
+                    else:
+                        predict= self.classifier.predict([[x0,y0]])[0]
+                        predict_split = predict.split("-")
+                        knn_x = float(predict_split[0])
+                        knn_y = float(predict_split[1])
+
+                        self.mobileNode2x_knn = knn_x
+                        self.mobileNode2y_knn = knn_y
+                        self.mobilenode2x_sample_array[mobilenode1_sample_index] = x0
+                        self.mobilenode2y_sample_array[mobilenode1_sample_index] = y0
+                        
+
+                        if((self.mobilenode2_sample_index+ 1) == self.knn_samplesize):
+                            self.enough_mobile2_samples = 1
+                        self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) % self.knn_samplesize
             except Exception:
                 print("KNN Exception")
             tempIndex = 7
@@ -296,18 +394,61 @@ class BaseProcessing:
             x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
             # Determine KNN 
             try:
-                predict= self.classifier.predict([[x0,y0]])[0]
-                predict_split = predict.split("-")
-                knn_x = float(predict_split[0])
-                knn_y = float(predict_split[1])
                 if(self.receivedMobileNodeNumber == 1):
-                    self.mobileNode1x_knn = knn_x
-                    self.mobileNode1y_knn = knn_y
-                else:
-                    self.mobileNode2x_knn = knn_x
-                    self.mobileNode2y_knn = knn_y
-                
+                    if(self.enough_mobile1_samples):
+                        avg_test_x = np.mean(self.mobilenode1x_sample_array)
+                        avg_test_y = np.mean(self.mobilenode1y_sample_array)
+                        predict= self.classifier.predict([[avg_test_x,avg_test_y]])[0]
+                        predict_split = predict.split("-")
+                        knn_x = float(predict_split[0])
+                        knn_y = float(predict_split[1])
+                        self.mobilenode1x_sample_array[mobilenode1_sample_index] = x0
+                        self.mobilenode1y_sample_array[mobilenode1_sample_index] = y0
+                        self.mobileNode1x_knn = knn_x
+                        self.mobileNode1y_knn = knn_y
+                        self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) % self.knn_samplesize
+                    else:
+                        predict= self.classifier.predict([[x0,y0]])[0]
+                        predict_split = predict.split("-")
+                        knn_x = float(predict_split[0])
+                        knn_y = float(predict_split[1])
 
+                        self.mobileNode1x_knn = knn_x
+                        self.mobileNode1y_knn = knn_y
+                        self.mobilenode1x_sample_array[mobilenode1_sample_index] = x0
+                        self.mobilenode1y_sample_array[mobilenode1_sample_index] = y0
+
+                        if((self.mobilenode1_sample_index+ 1) == self.knn_samplesize):
+                            self.enough_mobile1_samples = 1
+                        self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) % self.knn_samplesize
+                else: 
+                    if(self.enough_mobile2_samples):
+                        avg_test_x = np.mean(self.mobilenode2x_sample_array)
+                        avg_test_y = np.mean(self.mobilenode2y_sample_array)
+                        predict= self.classifier.predict([[avg_test_x,avg_test_y]])[0]
+                        predict_split = predict.split("-")
+                        knn_x = float(predict_split[0])
+                        knn_y = float(predict_split[1])
+                        self.mobilenode2x_sample_array[mobilenode1_sample_index] = x0
+                        self.mobilenode2y_sample_array[mobilenode1_sample_index] = y0
+                        self.mobileNode2x_knn = knn_x
+                        self.mobileNode2y_knn = knn_y
+                        self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) % self.knn_samplesize
+                    else:
+                        predict= self.classifier.predict([[x0,y0]])[0]
+                        predict_split = predict.split("-")
+                        knn_x = float(predict_split[0])
+                        knn_y = float(predict_split[1])
+
+                        self.mobileNode2x_knn = knn_x
+                        self.mobileNode2y_knn = knn_y
+                        self.mobilenode2x_sample_array[mobilenode1_sample_index] = x0
+                        self.mobilenode2y_sample_array[mobilenode1_sample_index] = y0
+                        
+
+                        if((self.mobilenode2_sample_index+ 1) == self.knn_samplesize):
+                            self.enough_mobile2_samples = 1
+                        self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) % self.knn_samplesize
             except Exception:
                 print("KNN Exception")
             tempIndex = 7
