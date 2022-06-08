@@ -77,15 +77,27 @@ class BaseProcessing:
         self.ax.plot(self.beacon_xvals,self.beacon_yvals,'bo', markersize='4')
         self.writeFile = open('resultsStatic.csv','w')
         self.tempcount =0
-        self.token1 = "cBKaA_KGTrY2i6_7NiYqhAnRzSTKK_d7jhfXSuNHrZaYUn3VnjMkrSeHmW_p8aEwOKPy_YACgXJH9vkLxB7MjA=="
-        self.org1 = "s4589619@student.uq.edu.au"
-        self.bucket1 = "TrainingData"
-        self.url1 = "https://us-east-1-1.aws.cloud2.influxdata.com"
-        self.client = influxdb_client.InfluxDBClient(url=self.url1, token=self.token1, org=self.org1) 
+        #FIXME KNN 
+        self.token = "cBKaA_KGTrY2i6_7NiYqhAnRzSTKK_d7jhfXSuNHrZaYUn3VnjMkrSeHmW_p8aEwOKPy_YACgXJH9vkLxB7MjA=="
+        self.org = "s4589619@student.uq.edu.au"
+        self.bucket = "TrainingData"
+        self.url = "https://us-east-1-1.aws.cloud2.influxdata.com"
+        self.client = influxdb_client.InfluxDBClient(url=self.url, token=self.token, org=self.org) 
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS) 
+        
         # actual position measured to collect training data in form "x-y"
         self.actual_position = "1-2.5"
-        
+        # number of values that have been uploaded
+        self.uploaded_values = 0
+        self.calculated_x_positions_sample = np.ones(10)
+        self.calculated_y_positions_sample = np.ones(10)
+        self.calculated_values_index = 0
+        self.program_finished = 0
+
+
+
+
+
     def setup_beacons(self):
         # inputfile = open('BeaconData.csv','r')
         # for row in inputfile:
@@ -126,8 +138,8 @@ class BaseProcessing:
         self.lock_rssi_coords.acquire()
         #self.lock_data.acquire()
         #print("ENTER CALCULATE POSITIONS")
-        #self.tempcount+= 1
-        #print("Self count%i", self.tempcount)
+        self.tempcount+= 1
+        print("Self count%i", self.tempcount)
         if (self.size_received_beacons == 3):
             r1 = self.receivedRSSI[0]
             r2 = self.receivedRSSI[1]
@@ -155,8 +167,40 @@ class BaseProcessing:
        
             x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
             
-            #ADD KNN
+            
+            #KNN training start
+            # save calculated positions
+            if (not(self.program_finished)):
+                self.calculated_x_positions_sample[self.calculated_values_index] = x0
+                self.calculated_y_positions_sample[self.calculated_values_index] = y0
+                self.calculated_values_index = (self.calculated_values_index + 1) 
+                # if collected 10 samples, average samples and upload
+                if(self.calculated_values_index == 10):
+                    print(self.calculated_x_positions_sample)
+                    print(self.calculated_y_positions_sample)
+                    avg_x = np.mean(self.calculated_x_positions_sample)
+                    avg_y = np.mean(self.calculated_y_positions_sample)
+                    point = Point("Point") \
+                        .field("x_calc", avg_x) \
+                        .field("y_calc", avg_y) \
+                        .field("actual_value", self.actual_position) \
+                        .time(datetime.utcnow(), WritePrecision.NS)
+                    self.write_api.write(self.bucket, self.org, point)
+                    self.calculated_values_index = 0
+                    self.uploaded_values += 1
+                    # only upload 10 avg values per position
+                    if(self.uploaded_values == 10):
+                        self.program_finished = 1
+                        for x in range(10):
+                            print("PROGRAM FINISHED")
+            else: 
+                print("PROGRAM FINISHED")
 
+
+
+
+            #ADD KNN
+            
             if (x0 < 2):
                 x0 = 2
             if (y0 < 4.1):
@@ -198,6 +242,35 @@ class BaseProcessing:
             A = np.vstack([Ax_array, Ay_array]).T
        
             x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
+
+            #KNN training start
+            # save calculated positions
+            if (not(self.program_finished)):
+                self.calculated_x_positions_sample[self.calculated_values_index] = x0
+                self.calculated_y_positions_sample[self.calculated_values_index] = y0
+                self.calculated_values_index = (self.calculated_values_index + 1) 
+                # if collected 10 samples, average samples and upload
+                if(self.calculated_values_index == 10):
+                    print(self.calculated_x_positions_sample)
+                    print(self.calculated_y_positions_sample)
+                    avg_x = np.mean(self.calculated_x_positions_sample)
+                    avg_y = np.mean(self.calculated_y_positions_sample)
+                    point = Point("Point") \
+                        .field("x_calc", avg_x) \
+                        .field("y_calc", avg_y) \
+                        .field("actual_value", self.actual_position) \
+                        .time(datetime.utcnow(), WritePrecision.NS)
+                    self.write_api.write(self.bucket, self.org, point)
+                    self.calculated_values_index = 0
+                    self.uploaded_values += 1
+                    # only upload 10 avg values per position
+                    if(self.uploaded_values == 10):
+                        self.program_finished = 1
+                        for x in range(10):
+                            print("PROGRAM FINISHED")
+            else: 
+                print("PROGRAM FINISHED")
+
             #ADD KNN
 
             if (x0 < 2):
@@ -252,6 +325,38 @@ class BaseProcessing:
             A = np.vstack([Ax_array, Ay_array]).T
        
             x0, y0 = np.linalg.lstsq(A,B_array,rcond=None)[0]
+
+            #FIX ME KNN TEST
+            x0 = random.uniform(1,2)
+            y0 = random.uniform(2,3)
+            #KNN training start
+            # save calculated positions
+            if (not(self.program_finished)):
+                self.calculated_x_positions_sample[self.calculated_values_index] = x0
+                self.calculated_y_positions_sample[self.calculated_values_index] = y0
+                self.calculated_values_index = (self.calculated_values_index + 1) 
+                # if collected 10 samples, average samples and upload
+                if(self.calculated_values_index == 10):
+                    print(self.calculated_x_positions_sample)
+                    print(self.calculated_y_positions_sample)
+                    avg_x = np.mean(self.calculated_x_positions_sample)
+                    avg_y = np.mean(self.calculated_y_positions_sample)
+                    point = Point("Point") \
+                        .field("x_calc", avg_x) \
+                        .field("y_calc", avg_y) \
+                        .field("actual_value", self.actual_position) \
+                        .time(datetime.utcnow(), WritePrecision.NS)
+                    self.write_api.write(self.bucket, self.org, point)
+                    self.calculated_values_index = 0
+                    self.uploaded_values += 1
+                    # only upload 10 avg values per position
+                    if(self.uploaded_values == 10):
+                        self.program_finished = 1
+                        for x in range(10):
+                            print("PROGRAM FINISHED")
+            else: 
+                print("PROGRAM FINISHED")
+
             #ADD KNN
 
             if (x0 < 2):
@@ -300,7 +405,7 @@ def update_data(BaseProcessing):
                 #print(output)
                 output_converted = ((str(output, 'utf-8'))[:-1])
                 #FIXME REMOVE WHEN NOT TESTING
-                #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,12:-59,}'
+                output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,12:-59,}'
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,}'
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-60}'
                 if len(output_converted) > 1:
@@ -316,7 +421,7 @@ def update_data(BaseProcessing):
                     # 3 rssi readings
                     #BaseProcessing.lock_data.acquire()
                     if(len(outputs) == 4):
-                        print("ACUUIRED 3 data")
+                        #print("ACUUIRED 3 data")
                         mobile_node_number = int((outputs[0])[-1:])
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
@@ -345,11 +450,11 @@ def update_data(BaseProcessing):
                         BaseProcessing.receivedRSSI[0] = receivedRSSI_actual1
                         BaseProcessing.receivedRSSI[1] = receivedRSSI_actual2
                         BaseProcessing.receivedRSSI[2] = receivedRSSI_actual3
-                        print("END ACUUIRED 3 data")
+                        #print("END ACUUIRED 3 data")
                         BaseProcessing.calculate_positions()
                         
                     if(len(outputs) == 5):
-                        print("ACUUIRED 4 data")
+                        #print("ACUUIRED 4 data")
                         mobile_node_number = int((outputs[0])[-1:])
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
@@ -388,11 +493,11 @@ def update_data(BaseProcessing):
                         BaseProcessing.receivedRSSI[3] = receivedRSSI_actual4
                         #BaseProcessing.lock_data.release()
                         BaseProcessing.calculate_positions()
-                        print("END ACUUIRED 4 data")
+                        #print("END ACUUIRED 4 data")
 
                         
                     if(len(outputs) == 6):
-                        print("ACUUIRED 5 data")
+                        #print("ACUUIRED 5 data")
                         mobile_node_number = int((outputs[0])[-1:])
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
@@ -437,7 +542,7 @@ def update_data(BaseProcessing):
 
                         BaseProcessing.receivedRSSI[4] = receivedRSSI_actual5
 
-                        print("END ACUUIRED 5 data")
+                        #print("END ACUUIRED 5 data")
 
                         #BaseProcessing.lock_data.release()
                         BaseProcessing.calculate_positions()
