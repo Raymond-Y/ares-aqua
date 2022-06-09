@@ -526,7 +526,7 @@ void main(void)
 		if (bt_mesh_is_provisioned()) {
 			// send adv msgs to mobile nodes
 			genericOnOffSetUnAck(1);
-			k_msleep(200);
+			k_msleep(500);
 
 		} else {
 			k_msleep(500);

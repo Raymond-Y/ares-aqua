@@ -206,7 +206,7 @@ static const struct bt_mesh_model_op gen_onoff_cli_op[] = {
 };
 
 static void analyse_received_data(int8_t* msg_rssi_value, int8_t* msg_rssi_node) {
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < 4; i++) {
 		if (msg_rssi_node[i] == 0x00) {
 			printk("0:%d,", msg_rssi_value[i]); // 4011-A
 		} else if (msg_rssi_node[i] == 0x01) {
@@ -221,20 +221,14 @@ static void analyse_received_data(int8_t* msg_rssi_value, int8_t* msg_rssi_node)
 			printk("5:%d,", msg_rssi_value[i]); // 4011-G
 		} else if (msg_rssi_node[i] == 0x07) {
 			printk("6:%d,", msg_rssi_value[i]); // 4011-H
-		} else if (msg_rssi_node[i] == 0x08) {
-			printk("7:%d,", msg_rssi_value[i]); // 4011-I
-		} else if (msg_rssi_node[i] == 0x09) {
-			printk("8:%d,", msg_rssi_value[i]); // 4011-L
 		} else if (msg_rssi_node[i] == 0x0A) {
-			printk("9:%d,", msg_rssi_value[i]); // Relay-W
+			printk("7:%d,", msg_rssi_value[i]); // Relay-W
 		} else if (msg_rssi_node[i] == 0x0B) {
-			printk("10:%d,", msg_rssi_value[i]); // Relay-X
+			printk("8:%d,", msg_rssi_value[i]); // Relay-X
 		} else if (msg_rssi_node[i] == 0x0C) {
-			printk("11:%d,", msg_rssi_value[i]); // Relay-Y
+			printk("9:%d,", msg_rssi_value[i]); // Relay-Y
 		} else if (msg_rssi_node[i] == 0x0D) {
-			printk("12:%d,", msg_rssi_value[i]); // Relay-Z
-		} else if (msg_rssi_node[i] == 0x0E) {
-			printk("X:%d,", msg_rssi_value[i]); // missed data
+			printk("10:%d,", msg_rssi_value[i]); // Relay-Z
 		} 
 	}
 	printk("}\n");
@@ -244,19 +238,22 @@ static void get_data_from_mobile(struct bt_mesh_model* model, struct bt_mesh_msg
 
 	int8_t msg_rssi_value[5];
 	int8_t msg_rssi_node[5];
+	int8_t msg_family;
 
-	if (ctx->addr == 4) {
-		//mobile node 1
-		printk("{Mobile1, ");
-	} else if (ctx->addr == 9) {
-		// mobile node 2
-		printk("{Mobile2, ");
-	}
 	for (int i = 0; i < 5; i++) {
 		msg_rssi_value[i] = net_buf_simple_pull_u8(buf);
 		msg_rssi_node[i] = net_buf_simple_pull_u8(buf);
-
 	}
+	msg_family = net_buf_simple_pull_u8(buf);
+
+	if (ctx->addr == 4) {
+		//mobile node 1
+		printk("{%dMobile1, ", msg_family);
+	} else if (ctx->addr == 9) {
+		// mobile node 2
+		printk("{%dMobile2, ", msg_family);
+	}
+	
 	// printk("rssi YAY: %d\n", ctx->recv_rssi);
 	analyse_received_data(msg_rssi_value, msg_rssi_node);
 	
@@ -272,20 +269,22 @@ static void get_data_from_mobile_unack(struct bt_mesh_model *model,struct bt_mes
 	k_sem_take(&recvMobileMsg, K_FOREVER);
 	get_data_from_mobile(model, ctx, buf);
 	k_sem_give(&recvMobileMsg);
+
 }
 
+
 static const struct bt_mesh_model_op rssi_data_from_mobile_op[] = {
-	{BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK, 1 + 2*5, get_data_from_mobile_unack},
+	{BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK, 2 + 2*5, get_data_from_mobile_unack},
 	BT_MESH_MODEL_OP_END,
 };
 
 static const struct bt_mesh_model_op rssi_data_from_mobile_op_2[] = {
-	{BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2, 1 + 2*5, get_data_from_mobile_unack},
+	{BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2, 2 + 2*5, get_data_from_mobile_unack},
 	BT_MESH_MODEL_OP_END,
 };
 
-BT_MESH_MODEL_PUB_DEFINE(rssi_data_from_mobile_pub, NULL, 2 + 2*5);
-BT_MESH_MODEL_PUB_DEFINE(rssi_data_from_mobile_pub_2, NULL, 2 + 2*5);
+BT_MESH_MODEL_PUB_DEFINE(rssi_data_from_mobile_pub, NULL, 13);
+BT_MESH_MODEL_PUB_DEFINE(rssi_data_from_mobile_pub_2, NULL, 13);
 
 #define NUMBER_OF_COLOURS 8
 
@@ -336,6 +335,41 @@ static const struct bt_mesh_comp comp = {
 
 // Generic OnOff Client - TX message producer functions
 // -----------------------------------------------------------
+
+static int msg_tid = 0; // TODO: move
+
+int sendProximityDataToMobile(uint16_t message_type) {
+	int err;
+	struct bt_mesh_model* model;
+	if (message_type == BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK) {
+		// mobile 1
+		model = &sig_models[4];
+	} else if (message_type == BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2) {
+		// mobile 2
+		model = &sig_models[5];
+	}
+	
+	
+	printk("sending proximity data to mobile..\n");
+	if (model->pub->addr == BT_MESH_ADDR_UNASSIGNED) {
+		printk("No publish address associated with the light HSL client model - \
+					add one with a configuration app like nRF Mesh\n");
+		return -1;
+	}
+	
+
+	struct net_buf_simple* msg = model->pub->msg;
+	bt_mesh_model_msg_init(msg, message_type);
+	net_buf_simple_add_u8(msg, 0x01);
+	// net_buf_simple_add_u8(msg, msg_tid);
+	err = bt_mesh_model_publish(model);
+	if (err) {
+		printk("bt_mesh_model_publish err %d\n", err);
+	}
+	msg_tid++;
+
+	return err;	
+}
 
 int genericOnOffGet() 
 {
@@ -409,31 +443,26 @@ void genericOnOffSet(uint8_t on_or_off)
 int sendLightHslSet(uint16_t message_type) 
 {
     int err;
-    struct bt_mesh_model *model = &sig_models[3];
+	struct bt_mesh_model* model = &sig_models[3];
+	
+	printk("sending proximity data to mobile..\n");
 	if (model->pub->addr == BT_MESH_ADDR_UNASSIGNED) {
-		printk("No publish address associated with the light HSL client model - add one with a configuration app like nRF Mesh\n");
+		printk("No publish address associated with the light HSL client model - \
+					add one with a configuration app like nRF Mesh\n");
 		return -1;
-	}     
-	struct net_buf_simple *msg = model->pub->msg;
+	}
 
-	bt_mesh_model_msg_init(msg,	message_type);
-	net_buf_simple_add_le16(msg, hsl[current_hsl_inx][2]); // Yes, index value 2 is correct - ordering of params is Lightness, Hue, Saturation
-	net_buf_simple_add_le16(msg, hsl[current_hsl_inx][0]);
-	net_buf_simple_add_le16(msg, hsl[current_hsl_inx][1]);
-	net_buf_simple_add_u8(msg, hsl_tid);
-	hsl_tid++;
-	printk("publishing light HSL set message\n");
+	struct net_buf_simple* msg = model->pub->msg;
+	bt_mesh_model_msg_init(msg, message_type);
+	net_buf_simple_add_u8(msg, 0x01);
+	// net_buf_simple_add_u8(msg, msg_tid);
 	err = bt_mesh_model_publish(model);
 	if (err) {
 		printk("bt_mesh_model_publish err %d\n", err);
-	} else {
-		current_hsl_inx++;
-		if (current_hsl_inx == NUMBER_OF_COLOURS) {
-			current_hsl_inx = 0;
-		}
 	}
+	msg_tid++;
 
-	return err;
+	return err;	
 }
 
 void lightHslSetUnAck() 
@@ -590,15 +619,47 @@ static void bt_ready(int err)
 
 }
 
+
+// uint8_t uart_buf[16];
+// static void uart_cb(const struct device *dev, void *user_data) {
+
+// 	// uart_irq_update(x);
+// 	int data_length = 0;
+// 	memset(uart_buf, 0, sizeof(uart_buf));
+
+// 	if (uart_irq_rx_ready(dev)) {
+// 		data_length = uart_fifo_read(dev, uart_buf, sizeof(uart_buf));
+// 		uart_buf[data_length] = 0;
+// 		if (sendProximityDataToMobile(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2)) {
+// 			printk("unable to send RSSI data\n");
+// 		}
+// 		// if (sendProximityDataToMobile(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK)) {
+// 		// 	printk("unable to send RSSI data\n");
+// 		// }
+// 		// printk("%s\n", uart_buf);
+// 	}
+	
+// }
+
+
 void main(void)
 {
 	int err;
+	// const struct device* dev = device_get_binding("CDC_ACM_0");
+	// if (!device_is_ready(dev)) {
+	// 	return;
+	// }	
 	
 
 	if (usb_enable(NULL)) {
 		return;
 	}
+	
+	// uart_irq_callback_set(dev, uart_cb);
 
+	/* Enable rx interrupts */
+	// uart_irq_rx_enable(dev);
+	
 	onoff_tid = 0;
 	hsl_tid = 0;
 
@@ -607,9 +668,26 @@ void main(void)
 
 	configureButtons();
 	configureLED();
+
+
+	// const struct device* uart = device_get_binding("UART_0");
+	// int uart1_data = 3;
+	// uart_irq_callback_user_data_set(uart, uart_cb, &uart1_data);
+	// uart_irq_rx_enable(uart);
+	// printk("uart enabled\n");
 	
 	err = bt_enable(bt_ready);
 	if (err) {
 			printk("bt_enable failed with err %d\n", err);
 	}
+
+
+
+	// while (1) {
+	// 	k_msleep(2000);
+	// 	if (sendProximityDataToMobile(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2)) {
+	// 		printk("unable to send RSSI data\n");
+	// 	}
+
+	// }
 }

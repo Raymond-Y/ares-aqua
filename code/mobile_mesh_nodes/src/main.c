@@ -389,11 +389,13 @@ static void set_hsl_state(struct bt_mesh_model *model, struct bt_mesh_msg_ctx *c
 static void light_hsl_set_unack(struct bt_mesh_model *model,struct bt_mesh_msg_ctx *ctx, 
 			struct net_buf_simple *buf) {
     printk("light_hsl_set_unack\n");
-    set_hsl_state(model, ctx, buf);
+	int8_t temp = net_buf_simple_pull_u8(buf);
+	
+    // set_hsl_state(model, ctx, buf);
 }
 
 static const struct bt_mesh_model_op light_hsl_op[] = {
-		{BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK, 7, light_hsl_set_unack},
+		{BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK, 1, light_hsl_set_unack},
 		BT_MESH_MODEL_OP_END,
 };
 
@@ -409,6 +411,24 @@ static struct bt_mesh_health_srv health_srv = {
 	.cb = &health_srv_cb,
 };
 
+static void get_proximity_data(struct bt_mesh_model *model,struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf) {
+
+	int8_t proximity_alert = net_buf_simple_pull_u8(buf);
+
+	if (proximity_alert == 0) {
+		printk("HI, YAY\n");
+		// do something
+	} else if (proximity_alert == 1) {
+		// do something else
+	}
+	
+}
+
+static void get_proximity_data_unack(struct bt_mesh_model *model,struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf) {
+
+	get_proximity_data(model, ctx, buf);
+}
+
 // -------------------------------------------------------------------------------------------------------
 // Composition
 // -----------
@@ -416,9 +436,21 @@ static struct bt_mesh_health_srv health_srv = {
 #define BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK		BT_MESH_MODEL_OP_2(0x82, 0x40) // MOBILE A
 #define BT_MESH_MODEL_OP_MOBILE_2_TO_BASE_UNACK 	BT_MESH_MODEL_OP_2(0x82, 0x41) // MOBILE B
 
-// 22 bytes (5 sets of beaconRSSI data, init msg, tid value)
-BT_MESH_MODEL_PUB_DEFINE(data_mobile_to_base, NULL, 12); // 22 when 16bit - 12 when 8bit
-BT_MESH_MODEL_PUB_DEFINE(data_mobile_to_base_2, NULL, 12); 
+// 12 bytes (5 sets of beaconRSSI data (2 bytes each), init msg, tid value)
+BT_MESH_MODEL_PUB_DEFINE(data_mobile_to_base, NULL, 13);
+BT_MESH_MODEL_PUB_DEFINE(data_mobile_to_base_2, NULL, 13); 
+
+// mobile 1 receiving data from base (proximity)
+static const struct bt_mesh_model_op prox_data_from_base[] = {
+	{BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK, 12, get_proximity_data_unack},
+	BT_MESH_MODEL_OP_END,
+};
+
+// mobile 1 receiving data from base (proximity)
+static const struct bt_mesh_model_op prox_data_from_base_2[] = {
+	{BT_MESH_MODEL_OP_MOBILE_2_TO_BASE_UNACK, 12, get_proximity_data_unack},
+	BT_MESH_MODEL_OP_END,
+};
 
 
 static struct bt_mesh_model sig_models[] = {
@@ -426,8 +458,9 @@ static struct bt_mesh_model sig_models[] = {
 	BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
 	BT_MESH_MODEL(BT_MESH_MODEL_ID_GEN_ONOFF_SRV, generic_onoff_op, &generic_onoff_pub, NULL),
 	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_HSL_SRV, light_hsl_op, &light_hsl_pub, NULL),
-	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_CLI, NULL, &data_mobile_to_base, &beaconRSSI[0]),
-	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_LC_CLI, NULL, &data_mobile_to_base_2, &beaconRSSI[0]),
+	// BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_CLI, NULL, &data_mobile_to_base, &beaconRSSI[0]),
+	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_CLI, prox_data_from_base, &data_mobile_to_base, &beaconRSSI[0]),
+	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_LC_CLI, prox_data_from_base_2, &data_mobile_to_base_2, &beaconRSSI[0]),
 };
 
 // node contains elements.note that BT_MESH_MODEL_NONE means "none of this type" ands here means "no vendor models"
@@ -472,7 +505,7 @@ int sendDataToBase(uint16_t message_type) {
 			net_buf_simple_add_u8(msg, beaconRSSI[i][0]);
 			numMsgsAdded++;
 			// only send a set of 5 rssi/name values;
-			if (numMsgsAdded == 5) {
+			if (numMsgsAdded == 4) {
 				break;
 			}
 		}
@@ -484,6 +517,7 @@ int sendDataToBase(uint16_t message_type) {
 		net_buf_simple_add_u8(msg, 0x0E); //TODO change
 		numMsgsAdded++;
 	}
+	net_buf_simple_add_u8(msg, nodeFamily);
 	net_buf_simple_add_u8(msg, msg_tid);
 	msg_tid += 2;
 	printk("publishing RSSI data\n");
@@ -702,8 +736,8 @@ void main(void)
 	struct bt_le_scan_param scanParams = {
 		.type = BT_HCI_LE_SCAN_ACTIVE,
 		.options = BT_LE_SCAN_OPT_NONE,
-		.interval = 0x0050,
-		.window = 0x0050
+		.interval = 0x0200,
+		.window = 0x0200
 	};
 
 	while (1) {
@@ -722,7 +756,7 @@ void main(void)
 				printk("starting scanning failed (err %d)\n", err);
 			}
 
-			k_msleep(200);
+			k_msleep(300);
 			err = bt_le_scan_stop();
 			if (err) {
 				printk("stop scanning failed (err %d)\n", err);
@@ -735,6 +769,13 @@ void main(void)
 				beaconRSSI[i + 9][1] = staticNodeRSSI[i][1];
 				// printk("i: %d    rssi: %d\n", i, beaconRSSI[i][1]);
 			}
+			if (beaconRSSI[2][1] > -110) {
+				beaconRSSI[2][1] = beaconRSSI[2][1] - 7;
+				if (beaconRSSI[2][1] > -50) {
+					beaconRSSI[2][1] = beaconRSSI[2][1] + 7;
+				}
+			}
+
 
 			for (int j = 0; j < NUM_BEACONS; j++) {
 				int count = 0;
@@ -743,7 +784,7 @@ void main(void)
 					
 					if (beaconRSSI[j][1] > beaconRSSI[k][1]) {
 						count++;
-						if (count >= 8) {
+						if (count >= 9) { // 8 for top 5 beacons --> 9 for top 4 beacons
 							strongestSignals[j] = 1;
 							break;
 						}
