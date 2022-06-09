@@ -554,9 +554,9 @@ def update_data(BaseProcessing):
                         mobile_node_number = int((outputs[0])[-1:])
                         family_number = int((outputs[0])[0:1])
                         if(mobile_node_number == 1):
-                            self.mobile1_family = family_number
+                            BaseProcessing.mobile1_family = family_number
                         else:
-                            self.mobile2_family = family_number
+                            BaseProcessing.mobile2_family = family_number
 
 
 
@@ -597,9 +597,9 @@ def update_data(BaseProcessing):
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         family_number = int((outputs[0])[0:1])
                         if(mobile_node_number == 1):
-                            self.mobile1_family = family_number
+                            BaseProcessing.mobile1_family = family_number
                         else:
-                            self.mobile2_family = family_number
+                            BaseProcessing.mobile2_family = family_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
                         #nodeValues are "0-11"
                         nodeInfo1 = outputs[1].split(":")
@@ -644,9 +644,9 @@ def update_data(BaseProcessing):
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         family_number = int((outputs[0])[0:1])
                         if(mobile_node_number == 1):
-                            self.mobile1_family = family_number
+                            BaseProcessing.mobile1_family = family_number
                         else:
-                            self.mobile2_family = family_number
+                            BaseProcessing.mobile2_family = family_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
                         #nodeValues are "0-11"
                         nodeInfo1 = outputs[1].split(":")
