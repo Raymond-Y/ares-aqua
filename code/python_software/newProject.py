@@ -501,6 +501,8 @@ class BaseProcessing:
             msg = '0'
         if(msg != "2"):
             self.serial_port.write(msg.encode())
+            print("sending msg")
+            print(msg)
         self.lock_rssi_coords.release()
         #self.lock_data.release()
 
@@ -696,7 +698,7 @@ def update_data(BaseProcessing):
                                                 
             except Exception as e:
 
-                
+                print(e)
                 
                 BaseProcessing.serial_port.close()
                 BaseProcessing.lock_connection_status.acquire()
