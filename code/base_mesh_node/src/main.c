@@ -311,13 +311,15 @@ uint8_t current_hsl_inx = 1;
 BT_MESH_MODEL_PUB_DEFINE(gen_onoff_cli, NULL, 2);
 BT_MESH_MODEL_PUB_DEFINE(light_hsl_cli, NULL, 2);
 
+int8_t temp = 0x00;
+
 static struct bt_mesh_model sig_models[] = {
 				BT_MESH_MODEL_CFG_SRV,
 				BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
 				BT_MESH_MODEL(BT_MESH_MODEL_ID_GEN_ONOFF_CLI, gen_onoff_cli_op, &gen_onoff_cli, &onoff[0]),
-				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_HSL_CLI, NULL, &light_hsl_cli, &hsl[0]),
-				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_SRV, rssi_data_from_mobile_op, &rssi_data_from_mobile_pub, NULL),
-				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_LC_SRV, rssi_data_from_mobile_op_2, &rssi_data_from_mobile_pub_2, NULL),
+				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_HSL_CLI, NULL, &light_hsl_cli, &temp),
+				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_SRV, rssi_data_from_mobile_op, &rssi_data_from_mobile_pub, &temp),
+				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_LC_SRV, rssi_data_from_mobile_op_2, &rssi_data_from_mobile_pub_2, &temp),
 };
 
 // node contains elements. Note that BT_MESH_MODEL_NONE means "none of this type" and here means "no vendor models"
@@ -337,39 +339,6 @@ static const struct bt_mesh_comp comp = {
 // -----------------------------------------------------------
 
 static int msg_tid = 0; // TODO: move
-
-int sendProximityDataToMobile(uint16_t message_type) {
-	int err;
-	struct bt_mesh_model* model;
-	if (message_type == BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK) {
-		// mobile 1
-		model = &sig_models[4];
-	} else if (message_type == BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2) {
-		// mobile 2
-		model = &sig_models[5];
-	}
-	
-	
-	printk("sending proximity data to mobile..\n");
-	if (model->pub->addr == BT_MESH_ADDR_UNASSIGNED) {
-		printk("No publish address associated with the light HSL client model - \
-					add one with a configuration app like nRF Mesh\n");
-		return -1;
-	}
-	
-
-	struct net_buf_simple* msg = model->pub->msg;
-	bt_mesh_model_msg_init(msg, message_type);
-	net_buf_simple_add_u8(msg, 0x01);
-	// net_buf_simple_add_u8(msg, msg_tid);
-	err = bt_mesh_model_publish(model);
-	if (err) {
-		printk("bt_mesh_model_publish err %d\n", err);
-	}
-	msg_tid++;
-
-	return err;	
-}
 
 int genericOnOffGet() 
 {
@@ -444,8 +413,7 @@ int sendLightHslSet(uint16_t message_type)
 {
     int err;
 	struct bt_mesh_model* model = &sig_models[3];
-	
-	printk("sending proximity data to mobile..\n");
+	// printk("sending proximity data to mobile..\n");
 	if (model->pub->addr == BT_MESH_ADDR_UNASSIGNED) {
 		printk("No publish address associated with the light HSL client model - \
 					add one with a configuration app like nRF Mesh\n");
@@ -455,7 +423,6 @@ int sendLightHslSet(uint16_t message_type)
 	struct net_buf_simple* msg = model->pub->msg;
 	bt_mesh_model_msg_init(msg, message_type);
 	net_buf_simple_add_u8(msg, 0x01);
-	// net_buf_simple_add_u8(msg, msg_tid);
 	err = bt_mesh_model_publish(model);
 	if (err) {
 		printk("bt_mesh_model_publish err %d\n", err);
@@ -683,11 +650,14 @@ void main(void)
 
 
 
-	// while (1) {
-	// 	k_msleep(2000);
-	// 	if (sendProximityDataToMobile(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2)) {
-	// 		printk("unable to send RSSI data\n");
-	// 	}
+	while (1) {
+		k_msleep(2000);
+		// if (sendProximityDataToMobile(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2)) {
+		// 	printk("unable to send RSSI data\n");
+		// }
+		if (sendLightHslSet(BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK)) {
+			printk("unable to send RSSI data\n");
+		}
 
-	// }
+	}
 }

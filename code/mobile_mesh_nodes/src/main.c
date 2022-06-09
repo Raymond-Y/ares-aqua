@@ -394,10 +394,10 @@ static void light_hsl_set_unack(struct bt_mesh_model *model,struct bt_mesh_msg_c
     // set_hsl_state(model, ctx, buf);
 }
 
-static const struct bt_mesh_model_op light_hsl_op[] = {
-		{BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK, 1, light_hsl_set_unack},
-		BT_MESH_MODEL_OP_END,
-};
+// static const struct bt_mesh_model_op light_hsl_op[] = {
+// 		{BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK, 1, light_hsl_set_unack},
+// 		BT_MESH_MODEL_OP_END,
+// };
 
 // model publication context
 BT_MESH_MODEL_PUB_DEFINE(light_hsl_pub, NULL, 2 + 6);
@@ -414,9 +414,12 @@ static struct bt_mesh_health_srv health_srv = {
 static void get_proximity_data(struct bt_mesh_model *model,struct bt_mesh_msg_ctx *ctx, struct net_buf_simple *buf) {
 
 	int8_t proximity_alert = net_buf_simple_pull_u8(buf);
+	int8_t random = net_buf_simple_pull_u8(buf);
+	printk("prox %d\n", proximity_alert);
+	printk("rand %d\n", random);
 
-	if (proximity_alert == 0) {
-		printk("HI, YAY\n");
+	if (proximity_alert == 1) {
+		
 		// do something
 	} else if (proximity_alert == 1) {
 		// do something else
@@ -442,25 +445,25 @@ BT_MESH_MODEL_PUB_DEFINE(data_mobile_to_base_2, NULL, 13);
 
 // mobile 1 receiving data from base (proximity)
 static const struct bt_mesh_model_op prox_data_from_base[] = {
-	{BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK, 12, get_proximity_data_unack},
+	{BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK, 2, get_proximity_data_unack},
 	BT_MESH_MODEL_OP_END,
 };
 
 // mobile 1 receiving data from base (proximity)
-static const struct bt_mesh_model_op prox_data_from_base_2[] = {
-	{BT_MESH_MODEL_OP_MOBILE_2_TO_BASE_UNACK, 12, get_proximity_data_unack},
-	BT_MESH_MODEL_OP_END,
-};
+// static const struct bt_mesh_model_op prox_data_from_base_2[] = {
+// 	{BT_MESH_MODEL_OP_MOBILE_2_TO_BASE_UNACK, 1, get_proximity_data_unack},
+// 	BT_MESH_MODEL_OP_END,
+// };
 
 
 static struct bt_mesh_model sig_models[] = {
     BT_MESH_MODEL_CFG_SRV,
 	BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
 	BT_MESH_MODEL(BT_MESH_MODEL_ID_GEN_ONOFF_SRV, generic_onoff_op, &generic_onoff_pub, NULL),
-	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_HSL_SRV, light_hsl_op, &light_hsl_pub, NULL),
+	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_HSL_SRV, prox_data_from_base, &light_hsl_pub, NULL),
 	// BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_CLI, NULL, &data_mobile_to_base, &beaconRSSI[0]),
-	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_CLI, prox_data_from_base, &data_mobile_to_base, &beaconRSSI[0]),
-	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_LC_CLI, prox_data_from_base_2, &data_mobile_to_base_2, &beaconRSSI[0]),
+	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_CLI, NULL, &data_mobile_to_base, &beaconRSSI[0]),
+	BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_LC_CLI, NULL, &data_mobile_to_base_2, &beaconRSSI[0]),
 };
 
 // node contains elements.note that BT_MESH_MODEL_NONE means "none of this type" ands here means "no vendor models"
