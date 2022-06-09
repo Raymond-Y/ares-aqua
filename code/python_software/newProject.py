@@ -42,9 +42,9 @@ class BaseProcessing:
         self.mobileNode1y_knn = 0
         self.mobileNode2x_knn = 0
         self.mobileNode2y_knn = 0
-
-
-
+        # what type of message to send 
+        self.mobileNodeWarning = 0
+        
         # x and y positions of nodes that have sent rssi data
         self.receivedXPositions = np.ones(5)
         self.receivedYPositions = np.ones(5)
@@ -82,6 +82,8 @@ class BaseProcessing:
         self.mobilenode2x_sample_array = np.ones(5)
         self.mobilenode2y_sample_array = np.ones(5)
         self.knn_samplesize =5
+        self.mobile1_family = 9
+        self.mobile2_family = 10
 
 
 
@@ -489,6 +491,16 @@ class BaseProcessing:
             else:
                 self.mobileNode2x = x0
                 self.mobileNode2y = y0
+        distancex = (self.mobileNode1x - self.mobileNode2x)
+        distancey = (self.mobileNode1y - self.mobileNode2y)
+        distance = math.sqrt((distancex**2) + (distancey**2))
+        msg = "2"
+        if((distance < 3) and (self.mobile1_family != self.mobile2_family) ):
+            msg = "1"
+        else:
+            msg = '0'
+        if(msg != "2"):
+            self.serial_port.write(msg.encode())
         self.lock_rssi_coords.release()
         #self.lock_data.release()
 
@@ -536,8 +548,16 @@ def update_data(BaseProcessing):
                     # 3 rssi readings
                     
                     if(len(outputs) == 4):
-                       
+                        
                         mobile_node_number = int((outputs[0])[-1:])
+                        family_number = int((outputs[0])[0:1])
+                        if(mobile_node_number == 1):
+                            self.mobile1_family = family_number
+                        else:
+                            self.mobile2_family = family_number
+
+
+
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
                         #nodeValues are "0-11"
@@ -573,6 +593,11 @@ def update_data(BaseProcessing):
                         
                         mobile_node_number = int((outputs[0])[-1:])
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
+                        family_number = int((outputs[0])[0:1])
+                        if(mobile_node_number == 1):
+                            self.mobile1_family = family_number
+                        else:
+                            self.mobile2_family = family_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
                         #nodeValues are "0-11"
                         nodeInfo1 = outputs[1].split(":")
@@ -615,6 +640,11 @@ def update_data(BaseProcessing):
                         
                         mobile_node_number = int((outputs[0])[-1:])
                         BaseProcessing.receivedMobileNodeNumber = mobile_node_number
+                        family_number = int((outputs[0])[0:1])
+                        if(mobile_node_number == 1):
+                            self.mobile1_family = family_number
+                        else:
+                            self.mobile2_family = family_number
                         BaseProcessing.size_received_beacons =(len(outputs) -1)
                         #nodeValues are "0-11"
                         nodeInfo1 = outputs[1].split(":")
