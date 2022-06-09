@@ -63,11 +63,11 @@ class BaseProcessing:
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS) 
         #Important - Change at the start
         # actual position measured to collect training data in form "x-y"
-        self.actual_position = "1-2.5"
+        self.actual_position = "12.48-7.59"
         # number of values that have been uploaded
         self.uploaded_values = 0
-        self.calculated_x_positions_sample = np.ones(10)
-        self.calculated_y_positions_sample = np.ones(10)
+        self.calculated_x_positions_sample = np.ones(5)
+        self.calculated_y_positions_sample = np.ones(5)
         self.calculated_values_index = 0
         self.program_finished = 0
 
@@ -132,8 +132,8 @@ class BaseProcessing:
                 self.calculated_x_positions_sample[self.calculated_values_index] = x0
                 self.calculated_y_positions_sample[self.calculated_values_index] = y0
                 self.calculated_values_index = (self.calculated_values_index + 1) 
-                # if collected 10 samples, average samples and upload
-                if(self.calculated_values_index == 10):
+                # if collected 5 samples, average samples and upload
+                if(self.calculated_values_index == 5):
                     print(self.calculated_x_positions_sample)
                     print(self.calculated_y_positions_sample)
                     avg_x = np.mean(self.calculated_x_positions_sample)
@@ -223,8 +223,8 @@ class BaseProcessing:
                 self.calculated_x_positions_sample[self.calculated_values_index] = x0
                 self.calculated_y_positions_sample[self.calculated_values_index] = y0
                 self.calculated_values_index = (self.calculated_values_index + 1) 
-                # if collected 10 samples, average samples and upload
-                if(self.calculated_values_index == 10):
+                # if collected 5 samples, average samples and upload
+                if(self.calculated_values_index == 5):
                     print(self.calculated_x_positions_sample)
                     print(self.calculated_y_positions_sample)
                     avg_x = np.mean(self.calculated_x_positions_sample)
