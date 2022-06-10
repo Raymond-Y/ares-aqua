@@ -1,0 +1,38 @@
+/ {
+	aliases {
+                redled = &led0;
+                greenled = &led1;
+                blueled = &led2;
+                pwmbuzzer = &pwm_one;
+	};
+
+        leds {
+                compatible = "gpio-leds";
+                status = "okay";
+
+                led0: led_0 {
+                        gpios = <&sx1509b 7 0x1>;
+                        label = "Red LED";
+                };
+                led1: led_1 {
+                        gpios = <&sx1509b 5 0x1>;
+                        label = "Green LED";
+                };
+                led2: led_2 {
+                        gpios = <&sx1509b 6 0x1>;
+                        label = "Blue LED";
+                };
+        };
+
+        pwmdrv {
+                compatible = "gpio-pwm";
+                pwm_one: pwmOne {
+                        pwms = <&pwm1 27>;
+                };
+        };
+};
+&pwm1 {
+        status = "okay";
+        ch0-pin = <27>;
+};
+

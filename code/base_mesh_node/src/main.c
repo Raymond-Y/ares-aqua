@@ -409,8 +409,7 @@ void genericOnOffSet(uint8_t on_or_off)
 // Light HSL Client - TX message producer functions
 // -----------------------------------------------------------
 
-int sendLightHslSet(uint16_t message_type) 
-{
+int sendLightHslSet(uint16_t message_type, int8_t deviceNear) {
     int err;
 	struct bt_mesh_model* model = &sig_models[3];
 	// printk("sending proximity data to mobile..\n");
@@ -422,7 +421,8 @@ int sendLightHslSet(uint16_t message_type)
 
 	struct net_buf_simple* msg = model->pub->msg;
 	bt_mesh_model_msg_init(msg, message_type);
-	net_buf_simple_add_u8(msg, 0x01);
+	net_buf_simple_add_u8(msg, deviceNear);
+	net_buf_simple_add_u8(msg, msg_tid);
 	err = bt_mesh_model_publish(model);
 	if (err) {
 		printk("bt_mesh_model_publish err %d\n", err);
@@ -434,18 +434,14 @@ int sendLightHslSet(uint16_t message_type)
 
 void lightHslSetUnAck() 
 {
-	if (sendLightHslSet(BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK))
-	{
-		printk("Unable to send light HSL set unack message\n");
-	}
+
 }
 
 // Buttons
 // -------
 void button1_work_handler(struct k_work *work)
 {	
-	// bt_mesh_reset();
-    lightHslSetUnAck();
+
 }
 
 bool debounce(int btn_inx) {
@@ -587,45 +583,48 @@ static void bt_ready(int err)
 }
 
 
-// uint8_t uart_buf[16];
-// static void uart_cb(const struct device *dev, void *user_data) {
+uint8_t uart_buf[16];
+static void uart_cb(const struct device *dev, void *user_data) {
 
-// 	// uart_irq_update(x);
-// 	int data_length = 0;
-// 	memset(uart_buf, 0, sizeof(uart_buf));
+	// uart_irq_update(x);
+	int data_length = 0;
+	memset(uart_buf, 0, sizeof(uart_buf));
 
-// 	if (uart_irq_rx_ready(dev)) {
-// 		data_length = uart_fifo_read(dev, uart_buf, sizeof(uart_buf));
-// 		uart_buf[data_length] = 0;
-// 		if (sendProximityDataToMobile(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2)) {
-// 			printk("unable to send RSSI data\n");
-// 		}
-// 		// if (sendProximityDataToMobile(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK)) {
-// 		// 	printk("unable to send RSSI data\n");
-// 		// }
-// 		// printk("%s\n", uart_buf);
-// 	}
+	if (uart_irq_rx_ready(dev)) {
+		data_length = uart_fifo_read(dev, uart_buf, sizeof(uart_buf));
+		uart_buf[data_length] = 0;
+		// printk("uart_biuf\n", uart_buf[0])
+		if (uart_buf[0] == 48) {
+			if (sendLightHslSet(BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK, 0)) {
+				printk("unable to send RSSI data\n");
+			}
+		} else if (uart_buf[0] == 49) {
+			if (sendLightHslSet(BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK, 1)) {
+				printk("unable to send RSSI data\n");
+			}
+		}
+	}
 	
-// }
+}
 
 
 void main(void)
 {
 	int err;
-	// const struct device* dev = device_get_binding("CDC_ACM_0");
-	// if (!device_is_ready(dev)) {
-	// 	return;
-	// }	
+	const struct device* dev = device_get_binding("CDC_ACM_0");
+	if (!device_is_ready(dev)) {
+		return;
+	}	
 	
 
 	if (usb_enable(NULL)) {
 		return;
 	}
 	
-	// uart_irq_callback_set(dev, uart_cb);
+	uart_irq_callback_set(dev, uart_cb);
 
 	/* Enable rx interrupts */
-	// uart_irq_rx_enable(dev);
+	uart_irq_rx_enable(dev);
 	
 	onoff_tid = 0;
 	hsl_tid = 0;
@@ -649,15 +648,14 @@ void main(void)
 	}
 
 
+	// while (1) {
+	// 	k_msleep(2000);
+	// 	// if (sendProximityDataToMobile(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2)) {
+	// 	// 	printk("unable to send RSSI data\n");
+	// 	// }
+	// 	if (sendLightHslSet(BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK)) {
+	// 		printk("unable to send RSSI data\n");
+	// 	}
 
-	while (1) {
-		k_msleep(2000);
-		// if (sendProximityDataToMobile(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2)) {
-		// 	printk("unable to send RSSI data\n");
-		// }
-		if (sendLightHslSet(BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK)) {
-			printk("unable to send RSSI data\n");
-		}
-
-	}
+	// }
 }

@@ -1,5 +1,7 @@
 set(QEMU_EXTRA_FLAGS -s)
 
+set(DTC_OVERLAY_FILE thingy52_overlay.dtsi)
+
 option(Mobile_A "select static node" OFF)
 option(Mobile_B "select static node" OFF)
 IF(${Mobile_A})
@@ -14,18 +16,13 @@ project(code/mobile_mesh_nodes)
 
 include_directories(    
                         ../lib/pb_driver/
+                        ../lib/pwm_speaker_driver/
                         )
 
 target_sources(app PRIVATE 
                         src/main.c
-                        # ../../oslib/pwm_speaker_driver/s4589514_speaker_pwm.c
+                        ../lib/pwm_speaker_driver/s4589514_speaker_pwm.c
                         ../lib/pb_driver/s4589514_pb.c
-                        # ../../oslib/ultrasonic_driver/s4589514_ultra.c
-                        # ../../oslib/scu_drivers/scu_ble/ble_mobile_static.c
-                        # ../../oslib/mpu_i2c/inv_mpu.c
-                        # ../../oslib/mpu_i2c/inv_mpu_dmp_motion_driver.c
-                        # ../../oslib/mpu_i2c/zephyr_i2c.c
-                        # ../../oslib/scu_drivers/scu_sensors/hal_imu.c
                         )
 
 # FILE(GLOB app_sources src/*.c)

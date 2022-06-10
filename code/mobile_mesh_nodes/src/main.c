@@ -14,7 +14,9 @@
 #include <drivers/gpio.h>
 #include <bluetooth/mesh.h>
 #include <random/rand32.h>
+#include <drivers/pwm.h>
 
+#include "s4589514_speaker_pwm.h"
 #include "s4589514_pb.h"
 
 #define BLE_MAX_NAME_LEN 	50
@@ -415,13 +417,13 @@ static void get_proximity_data(struct bt_mesh_model *model,struct bt_mesh_msg_ct
 
 	int8_t proximity_alert = net_buf_simple_pull_u8(buf);
 	int8_t random = net_buf_simple_pull_u8(buf);
-	printk("prox %d\n", proximity_alert);
-	printk("rand %d\n", random);
 
+	
 	if (proximity_alert == 1) {
-		
+		buzzer_frequency(200);
 		// do something
-	} else if (proximity_alert == 1) {
+	} else if (proximity_alert == 0) {
+		buzzer_frequency(60000);
 		// do something else
 	}
 	
@@ -716,6 +718,7 @@ void main(void)
     indicate_on();
 
 	init_pb();
+	init_speaker_pwm();
 
 	// set default colour to white
 	rgb_r = 255;
