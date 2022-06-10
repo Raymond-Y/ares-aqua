@@ -318,8 +318,8 @@ static struct bt_mesh_model sig_models[] = {
 				BT_MESH_MODEL_HEALTH_SRV(&health_srv, &health_pub),
 				BT_MESH_MODEL(BT_MESH_MODEL_ID_GEN_ONOFF_CLI, gen_onoff_cli_op, &gen_onoff_cli, &onoff[0]),
 				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_HSL_CLI, NULL, &light_hsl_cli, &temp),
-				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_SRV, rssi_data_from_mobile_op, &rssi_data_from_mobile_pub, &temp),
-				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_LC_SRV, rssi_data_from_mobile_op_2, &rssi_data_from_mobile_pub_2, &temp),
+				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_XYL_SRV, rssi_data_from_mobile_op, &rssi_data_from_mobile_pub, NULL),
+				BT_MESH_MODEL(BT_MESH_MODEL_ID_LIGHT_LC_SRV, rssi_data_from_mobile_op_2, &rssi_data_from_mobile_pub_2, NULL),
 };
 
 // node contains elements. Note that BT_MESH_MODEL_NONE means "none of this type" and here means "no vendor models"
@@ -615,17 +615,20 @@ void main(void)
 	if (!device_is_ready(dev)) {
 		return;
 	}	
+	k_msleep(500);
 	
 
 	if (usb_enable(NULL)) {
 		return;
 	}
+	k_msleep(500);
 	
 	uart_irq_callback_set(dev, uart_cb);
 
-	/* Enable rx interrupts */
+	// /* Enable rx interrupts */
 	uart_irq_rx_enable(dev);
 	
+	k_msleep(500);
 	onoff_tid = 0;
 	hsl_tid = 0;
 
@@ -646,16 +649,4 @@ void main(void)
 	if (err) {
 			printk("bt_enable failed with err %d\n", err);
 	}
-
-
-	// while (1) {
-	// 	k_msleep(2000);
-	// 	// if (sendProximityDataToMobile(BT_MESH_MODEL_OP_MOBILE_TO_BASE_UNACK_2)) {
-	// 	// 	printk("unable to send RSSI data\n");
-	// 	// }
-	// 	if (sendLightHslSet(BT_MESH_MODEL_OP_LIGHT_HSL_SET_UNACK)) {
-	// 		printk("unable to send RSSI data\n");
-	// 	}
-
-	// }
 }

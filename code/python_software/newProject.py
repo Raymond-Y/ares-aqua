@@ -148,7 +148,6 @@ class BaseProcessing:
             try:
                 if(self.receivedMobileNodeNumber == 1):
                     if(self.enough_mobile1_samples):
-                        print("hi")
                         avg_test_x = np.mean(self.mobilenode1x_sample_array)
                         avg_test_y = np.mean(self.mobilenode1y_sample_array)
                         predict= self.classifier.predict([[avg_test_x,avg_test_y]])[0]
@@ -158,8 +157,10 @@ class BaseProcessing:
                         self.mobilenode1x_sample_array[self.mobilenode1_sample_index] = x0
                         self.mobilenode1y_sample_array[self.mobilenode1_sample_index] = y0
                         self.mobileNode1x_knn = knn_x
-                        self.mobileNode1y_knn = knn_y
+                        self.mobileNode1y_knn = knn_y   
                         self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) % self.knn_samplesize
+                        #print(self.mobilenode1x_sample_array)
+                        #print(self.mobilenode1y_sample_array)
                     else:
                         predict= self.classifier.predict([[x0,y0]])[0]
                         predict_split = predict.split("-")
@@ -184,10 +185,12 @@ class BaseProcessing:
                         knn_x = float(predict_split[0])
                         knn_y = float(predict_split[1])
                         self.mobilenode2x_sample_array[self.mobilenode2_sample_index] = x0
-                        self.mobilenode2y_sample_array[self.mobilenode1_sample_index] = y0
+                        self.mobilenode2y_sample_array[self.mobilenode2_sample_index] = y0
                         self.mobileNode2x_knn = knn_x
                         self.mobileNode2y_knn = knn_y
                         self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) % self.knn_samplesize
+                        # print(self.mobilenode2x_sample_array)
+                        # print(self.mobilenode2y_sample_array)
                     else:
                         predict= self.classifier.predict([[x0,y0]])[0]
                         predict_split = predict.split("-")
@@ -228,8 +231,12 @@ class BaseProcessing:
 
             if (x0 < 2):
                 x0 = 2
+            if (x0 > 22):
+                x0 = 22
             if (y0 < 4.1):
                 y0 = 4.1
+            if (y0 > 19):
+                y0 = 19
 
 
             if(self.receivedMobileNodeNumber == 1):
@@ -273,7 +280,6 @@ class BaseProcessing:
             try:
                 if(self.receivedMobileNodeNumber == 1):
                     if(self.enough_mobile1_samples):
-                        print("hi")
                         avg_test_x = np.mean(self.mobilenode1x_sample_array)
                         avg_test_y = np.mean(self.mobilenode1y_sample_array)
                         predict= self.classifier.predict([[avg_test_x,avg_test_y]])[0]
@@ -285,6 +291,8 @@ class BaseProcessing:
                         self.mobileNode1x_knn = knn_x
                         self.mobileNode1y_knn = knn_y
                         self.mobilenode1_sample_index = (self.mobilenode1_sample_index + 1) % self.knn_samplesize
+                        #print(self.mobilenode1x_sample_array)
+                        #print(self.mobilenode1y_sample_array)
                     else:
                         predict= self.classifier.predict([[x0,y0]])[0]
                         predict_split = predict.split("-")
@@ -309,10 +317,12 @@ class BaseProcessing:
                         knn_x = float(predict_split[0])
                         knn_y = float(predict_split[1])
                         self.mobilenode2x_sample_array[self.mobilenode2_sample_index] = x0
-                        self.mobilenode2y_sample_array[self.mobilenode1_sample_index] = y0
+                        self.mobilenode2y_sample_array[self.mobilenode2_sample_index] = y0
                         self.mobileNode2x_knn = knn_x
                         self.mobileNode2y_knn = knn_y
                         self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) % self.knn_samplesize
+                        #print(self.mobilenode2x_sample_array)
+                        #print(self.mobilenode2y_sample_array)
                     else:
                         predict= self.classifier.predict([[x0,y0]])[0]
                         predict_split = predict.split("-")
@@ -336,8 +346,6 @@ class BaseProcessing:
             for value in range(4):
                 if(self.receivedRSSI[value] < 0.32):
                     tempIndex = value
-                    print("entered")
-
             if (tempIndex != 7):
                 nodeX = self.receivedXPositions[tempIndex]
                 nodeY = self.receivedYPositions[tempIndex]
@@ -349,10 +357,15 @@ class BaseProcessing:
                 y0 = smallY + nodeY
             #ADD KNN
 
+
             if (x0 < 2):
                 x0 = 2
+            if (x0 > 22):
+                x0 = 22
             if (y0 < 4.1):
                 y0 = 4.1
+            if (y0 > 19):
+                y0 = 19
 
 
             if(self.receivedMobileNodeNumber == 1):
@@ -440,8 +453,8 @@ class BaseProcessing:
                         predict_split = predict.split("-")
                         knn_x = float(predict_split[0])
                         knn_y = float(predict_split[1])
-                        self.mobilenode2x_sample_array[mobilenode1_sample_index] = x0
-                        self.mobilenode2y_sample_array[mobilenode1_sample_index] = y0
+                        self.mobilenode2x_sample_array[mobilenode2_sample_index] = x0
+                        self.mobilenode2y_sample_array[mobilenode2_sample_index] = y0
                         self.mobileNode2x_knn = knn_x
                         self.mobileNode2y_knn = knn_y
                         self.mobilenode2_sample_index = (self.mobilenode2_sample_index + 1) % self.knn_samplesize
@@ -453,8 +466,8 @@ class BaseProcessing:
 
                         self.mobileNode2x_knn = knn_x
                         self.mobileNode2y_knn = knn_y
-                        self.mobilenode2x_sample_array[mobilenode1_sample_index] = x0
-                        self.mobilenode2y_sample_array[mobilenode1_sample_index] = y0
+                        self.mobilenode2x_sample_array[mobilenode2_sample_index] = x0
+                        self.mobilenode2y_sample_array[mobilenode2_sample_index] = y0
                         
 
                         if((self.mobilenode2_sample_index+ 1) == self.knn_samplesize):
@@ -481,8 +494,12 @@ class BaseProcessing:
 
             if (x0 < 2):
                 x0 = 2
+            if (x0 > 22):
+                x0 = 22
             if (y0 < 4.1):
                 y0 = 4.1
+            if (y0 > 19):
+                y0 = 19
             
 
             if(self.receivedMobileNodeNumber == 1):
@@ -497,12 +514,11 @@ class BaseProcessing:
         msg = "2"
         if((distance < 3) and (self.mobile1_family != self.mobile2_family) ):
             msg = "1"
+            print("proximity alert")
         else:
             msg = "0"
         if(msg != "2"):
             self.serial_port.write(msg.encode())
-            print("sending msg")
-            print(msg)
         self.lock_rssi_coords.release()
         #self.lock_data.release()
 
@@ -540,11 +556,10 @@ def update_data(BaseProcessing):
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,12:-59,}'
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,}'
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-60}'
-                if ((len(output_converted) > 1) and (output_converted[0] == '{')):
+                if len(output_converted) > 1:
                     print(output_converted)
                     
-                    
-                    outputs = output_converted[1:-2].replace(" ", "").split(",")
+                    outputs = output_converted[1:-2].replace(" ", "").replace("{", "").split(",")
                     #print(outputs)
                     #print(len(outputs))
                     # 3 rssi readings
