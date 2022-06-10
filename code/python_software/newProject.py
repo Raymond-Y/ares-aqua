@@ -498,7 +498,7 @@ class BaseProcessing:
         if((distance < 3) and (self.mobile1_family != self.mobile2_family) ):
             msg = "1"
         else:
-            msg = '0'
+            msg = "0"
         if(msg != "2"):
             self.serial_port.write(msg.encode())
             print("sending msg")
@@ -699,7 +699,7 @@ def update_data(BaseProcessing):
             except Exception as e:
 
                 print(e)
-                
+                print("ERROR - line 702")
                 BaseProcessing.serial_port.close()
                 BaseProcessing.lock_connection_status.acquire()
                 BaseProcessing.isConnected = 0
