@@ -540,7 +540,7 @@ def update_data(BaseProcessing):
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,12:-59,}'
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-67, 10:-73,}'
                 #output_converted = '{"Mobile2, 2:-75, 4:-69, 5:-60}'
-                if ((len(output_converted) > 1) and (output_converted[0] = '{')):
+                if ((len(output_converted) > 1) and (output_converted[0] == '{')):
                     print(output_converted)
                     
                     
